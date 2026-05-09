@@ -4,16 +4,16 @@ import json
 from pathlib import Path
 
 from shit_arm.data import JsonlRecorder, NullRecorder
-from shit_arm.hardware import MockCamera, MockGuideArm, MockRobotArm
+from shit_arm.hardware import SimulatedCamera, SimulatedGuideArm, SimulatedRobotArm
 from shit_arm.hardware.lerobot_adapter import LeRobotFollowerArm, LeRobotLeaderArm, LeRobotObservationCamera
 from shit_arm.perception import VisionConfig, build_vision_pipeline
 from shit_arm.types import Calibration, SystemContext
 
 
-def build_mock_context(
+def build_simulated_context(
     record: bool = False,
     run_root: Path = Path("runs"),
-    vision_detector: str = "mock",
+    vision_detector: str = "static",
     vision_config: VisionConfig | None = None,
     homography_path: Path | None = None,
 ) -> SystemContext:
@@ -21,9 +21,9 @@ def build_mock_context(
     _load_homography(calibration, homography_path)
     return SystemContext(
         mode_name="safe-idle",
-        robot=MockRobotArm(),
-        guide=MockGuideArm(),
-        camera=MockCamera(),
+        robot=SimulatedRobotArm(),
+        guide=SimulatedGuideArm(),
+        camera=SimulatedCamera(),
         recorder=JsonlRecorder(run_root) if record else NullRecorder(),
         perception=build_vision_pipeline(vision_detector, vision_config),
         calibration=calibration,
@@ -39,7 +39,7 @@ def build_lerobot_context(
     teleop_id: str,
     camera_key: str = "front",
     cameras: dict[str, object] | None = None,
-    vision_detector: str = "mock",
+    vision_detector: str = "static",
     vision_config: VisionConfig | None = None,
     homography_path: Path | None = None,
     record: bool = False,

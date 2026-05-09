@@ -179,7 +179,7 @@ def build_detector(
     foreground_threshold: int = 55,
     foreground_min_area: int = 250,
 ) -> ObjectDetector:
-    if name == "mock":
+    if name == "static":
         return StaticDetector()
     if name == "color":
         return ColorBlobDetector()
@@ -187,7 +187,7 @@ def build_detector(
         return ForegroundDetector(threshold=foreground_threshold, min_area=foreground_min_area)
     if name == "yolo":
         return YoloDetector(model_name=yolo_model, min_confidence=yolo_min_confidence, allowed_labels=yolo_labels)
-    raise ValueError(f"unknown vision detector {name!r}; expected mock, color, foreground, or yolo")
+    raise ValueError(f"unknown vision detector {name!r}; expected static, color, foreground, or yolo")
 
 
 def color_distance(pixel: object, rgb: tuple[int, int, int]) -> int:

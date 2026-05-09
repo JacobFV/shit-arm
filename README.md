@@ -2,7 +2,56 @@
 
 Control shell for a guide arm, powered robot arm, and laptop-camera trash-sorting system.
 
-The first implementation is intentionally hardware-light: every mode runs against mock adapters, emits normalized robot commands, passes through a safety filter, and can be recorded. Real guide-arm, robot-arm, and camera drivers can replace the mock classes without changing the modes.
+The default local backend is an explicit simulator for development and tests. Real hardware uses LeRobot follower/leader adapters, emits normalized robot commands, passes through a safety filter, and can be recorded.
+
+## Quick Start
+
+```bash
+# Install Python deps (uses uv)
+make install-ws
+
+# Start the WebSocket server
+make ws-server
+
+# Open the React UI (separate terminal)
+cd shit_arm/control/UI && npm run dev
+
+# Open the Electron view (separate terminal)
+make controller
+```
+
+Open http://localhost:5173 in a browser for the ARM control panel
+(JointRow, CartesianPad, video frame, gripper, object tracks).
+
+The Electron window shows the webcam feed with workspace overlay (grid,
+gripper cross, track bounding boxes) and a 3D arm simulation view.
+
+## WebSocket Server
+
+A standalone FastAPI server at `shit_arm/control/wss.py`:
+
+```
+ws://127.0.0.1:8765/ws
+```
+
+- Broadcasts arm state + camera frames (data URI) at ~10Hz
+- Accepts control commands (jog, gripper, torque, home, stop)
+- Supports `mock` (no hardware) and `lerobot` backends
+- Health check: `GET http://127.0.0.1:8765/health`
+
+```bash
+make ws-server WS_BACKEND=lerobot ROBOT_PORT=/dev/tty...
+```
+
+## Frontends
+
+| App | Stack | What it shows |
+|-----|-------|---------------|
+| React UI (`shit_arm/control/UI/`) | Vite + React 19 + TS 6 | Joint controls, cartesian jog pad, video frame, tool position, gripper, object tracks, speed settings, current chart |
+| Electron (`controller/`) | Electron 31 | Webcam feed with tracking overlay, 3D arm simulation, proprioception panel |
+
+Both connect to the WebSocket server. The React UI sends control commands;
+the Electron view is read-only for the overlay.
 
 ## Modes
 
@@ -37,51 +86,34 @@ Vision and sorting:
 - `sort`
 - `dataset`
 
-## Quick Start
+## CLI
 
 ```bash
 python -m shit_arm.cli modes
 python -m shit_arm.cli run mirror --ticks 3
 python -m shit_arm.cli run vision-monitor --ticks 1
 python -m shit_arm.cli run sort --ticks 1
-python -m shit_arm.cli run record --ticks 5 --run-root runs
-python -m shit_arm.cli run vision-monitor --vision-detector color --ticks 30
 ```
 
-After installing the package, the `shit-arm` console command is also available:
+After installing, the `shit-arm` console command is also available:
 
 ```bash
-pip install -e ".[dev]"
 shit-arm modes
 shit-arm run human-confirm-sort --confirmed --ticks 1
 ```
 
 ## Makefile
 
-Common workflows are wrapped in `make` targets:
-
 ```bash
-make install
-make test
-make controller-state
-make controller
-make vision-mock
+make install            # Install Python + Node deps
+make test               # Run Python tests + JS syntax checks
+make controller         # Start Electron controller app
+make ws-server          # Start WebSocket server
+make vision-sim         # Run simulated vision loop
+make vision-lerobot     # Run LeRobot vision with OpenCV camera
 ```
 
-For LeRobot hardware, pass ports as variables:
-
-```bash
-make vision-lerobot \
-  ROBOT_PORT=/dev/tty.usbmodem585A0076841 \
-  TELEOP_PORT=/dev/tty.usbmodem575E0031751 \
-  VISION_DETECTOR=foreground
-
-make mirror-lerobot \
-  ROBOT_PORT=/dev/tty.usbmodem585A0076841 \
-  TELEOP_PORT=/dev/tty.usbmodem575E0031751
-```
-
-Use `make help` for the full target list and configurable variables.
+See `make help` for the full target list and configurable variables.
 
 ## LeRobot Hardware Backend
 
@@ -164,6 +196,16 @@ input adapters -> context refresh -> mode -> safety filter -> robot driver
                                   |
                                   v
                               recorder
+                                  |
+                                  v
+                         WebSocket server (wss.py)
+                              |           |
+                     ┌────────┘           └────────┐
+                     ▼                              ▼
+               React UI (Vite)              Electron controller
+              (control panel,              (webcam + overlay,
+               video frame,                3D sim, proprioception)
+               jog controls)
 ```
 
 Every mode returns a `RobotCommand`:
@@ -199,7 +241,7 @@ The detector returns one-frame `Detection` values. The tracker turns those into 
 
 Available detector backends:
 
-- `mock`: deterministic fake can for tests and mode development.
+- `static`: deterministic can detection for tests and mode development.
 - `color`: dependency-free red-object blob detector for controlled camera bringup.
 - `foreground`: dependency-free object proposal for non-table blobs on a plain table.
 - `yolo`: optional Ultralytics YOLO detector; install with `pip install ultralytics`.
@@ -207,7 +249,7 @@ Available detector backends:
 Examples:
 
 ```bash
-python -m shit_arm.cli run vision-monitor --vision-detector mock --ticks 5
+python -m shit_arm.cli run vision-monitor --vision-detector static --ticks 5
 python -m shit_arm.cli run vision-monitor --vision-detector color --ticks 100
 python -m shit_arm.cli run vision-monitor --vision-detector foreground --foreground-min-area 300 --ticks 100
 python -m shit_arm.cli run vision-monitor --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
@@ -252,17 +294,9 @@ Then run:
 python -m shit_arm.cli run vision-monitor --homography-path calibration/image_to_table.json
 ```
 
-## Controller App
+## Legacy Controller State (file-based)
 
-The Electron controller app lives in `controller/`. It shows a left sidebar with:
-
-- session/mode status
-- live webcam video in the main workspace
-- gripper pixel coordinate
-- gripper world coordinate
-- every tracked object with pixel coordinate, world coordinate, bin, confidence, score, and motion comparison
-
-Generate a controller state file from Python:
+Generate a controller state file from Python (legacy, for tools that don't use WebSocket):
 
 ```bash
 python -m shit_arm.cli run vision-monitor \
@@ -271,24 +305,9 @@ python -m shit_arm.cli run vision-monitor \
   --controller-frame-path controller/latest-frame.jpg
 ```
 
-The controller prefers the frame exported by Python. If no exported frame exists, it falls back to opening the laptop webcam directly, but that fallback is only a preview and is not the detector input.
+## Hardware Interface
 
-Run the app:
-
-```bash
-npm install
-npm start
-```
-
-To point the app at another state file:
-
-```bash
-SHIT_ARM_CONTROLLER_STATE=/tmp/shit-arm-controller.json npm start
-```
-
-## Next Hardware Work
-
-Implement real adapters with the same methods as the mocks:
+Hardware adapters implement these methods:
 
 - `guide.read_state()`
 - `robot.read_state()`

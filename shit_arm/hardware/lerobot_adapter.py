@@ -72,19 +72,57 @@ class LeRobotFollowerArm:
             return self._send_joint_tuple(_home_for_keys(self.action_keys))
         if command.kind == CommandKind.JOINT_TARGET and command.joint_targets is not None:
             return self._send_joint_tuple(command.joint_targets)
+        if command.kind == CommandKind.CARTESIAN_TARGET and command.pose_target is not None:
+            return self._send_cartesian_pose(command.pose_target)
+        if command.kind == CommandKind.VELOCITY and command.velocities is not None:
+            return self._send_velocity(command.velocities)
         if command.kind == CommandKind.GRIPPER and command.gripper is not None:
             return self._send_gripper(command.gripper)
         if command.kind == CommandKind.COMPOSITE:
             for child in command.children:
                 self.apply(child)
             return
-        raise NotImplementedError(f"{command.kind.value} is not directly supported by LeRobot follower adapter")
+        raise ValueError(f"{command.kind.value} command is missing the fields required by the LeRobot follower adapter")
 
     def _send_joint_tuple(self, joints: tuple[float, ...]) -> None:
         keys = self.action_keys
         if len(joints) != len(keys):
             raise ValueError(f"joint command has {len(joints)} values but LeRobot action has {len(keys)} keys")
         action = dict(zip(keys, joints))
+        self._last_action = action
+        self.robot.send_action(action)
+
+    def _send_cartesian_pose(self, pose: Pose) -> None:
+        keys = self.action_keys
+        x_key = _feature_key(keys, "x")
+        y_key = _feature_key(keys, "y")
+        z_key = _feature_key(keys, "z")
+        missing = [axis for axis, key in (("x", x_key), ("y", y_key), ("z", z_key)) if key is None]
+        if missing:
+            raise ValueError(
+                "cartesian_target requires LeRobot action_features for x, y, and z; "
+                f"missing {', '.join(missing)} in {keys}"
+            )
+        action = dict(self._last_action) if self._last_action else _current_action_from_observation(
+            self.last_observation,
+            keys,
+        )
+        action[x_key] = pose.x
+        action[y_key] = pose.y
+        action[z_key] = pose.z
+        for axis, value in (("roll", pose.roll), ("pitch", pose.pitch), ("yaw", pose.yaw)):
+            key = _feature_key(keys, axis)
+            if key is not None:
+                action[key] = value
+        self._last_action = action
+        self.robot.send_action(action)
+
+    def _send_velocity(self, velocities: tuple[float, ...]) -> None:
+        keys = self.action_keys
+        if len(velocities) != len(keys):
+            raise ValueError(f"velocity command has {len(velocities)} values but LeRobot action has {len(keys)} keys")
+        current = self._last_action or _current_action_from_observation(self.last_observation, keys)
+        action = {key: float(current.get(key, 0.0)) + delta for key, delta in zip(keys, velocities)}
         self._last_action = action
         self.robot.send_action(action)
 
@@ -175,14 +213,32 @@ def _load_lerobot_class(registry: dict[str, tuple[str, str, str]], key: str) -> 
 
 
 def _numeric_feature_keys(features: dict[str, Any]) -> tuple[str, ...]:
-    position_keys = tuple(key for key in features if key.endswith(".pos"))
-    if position_keys:
-        return position_keys
     keys = []
     for key, value in features.items():
-        if value is float or value == float or str(value).endswith("float'>"):
+        if key.endswith(".pos") or value is float or value == float or str(value).endswith("float'>"):
             keys.append(key)
     return tuple(keys)
+
+
+def _feature_key(keys: tuple[str, ...], axis: str) -> str | None:
+    axis = axis.lower()
+    aliases = {
+        "x": ("x", "cartesian.x", "target.x", "end_effector.x", "ee.x"),
+        "y": ("y", "cartesian.y", "target.y", "end_effector.y", "ee.y"),
+        "z": ("z", "cartesian.z", "target.z", "end_effector.z", "ee.z"),
+        "roll": ("roll", "cartesian.roll", "target.roll", "end_effector.roll", "ee.roll"),
+        "pitch": ("pitch", "cartesian.pitch", "target.pitch", "end_effector.pitch", "ee.pitch"),
+        "yaw": ("yaw", "cartesian.yaw", "target.yaw", "end_effector.yaw", "ee.yaw"),
+    }[axis]
+    lowered = {key.lower(): key for key in keys}
+    for alias in aliases:
+        if alias in lowered:
+            return lowered[alias]
+    suffixes = tuple(f".{alias}" for alias in aliases)
+    for key in keys:
+        if key.lower().endswith(suffixes):
+            return key
+    return None
 
 
 def _arm_state_from_mapping(values: dict[str, Any], connected: bool) -> ArmState:

@@ -7,7 +7,7 @@ from shit_arm.types import ArmState, CameraFrame, CommandKind, Pose, RobotComman
 
 
 @dataclass
-class MockGuideArm:
+class SimulatedGuideArm:
     joints: tuple[float, ...] = (0.0, -0.6, 1.0, 0.0, 0.6, 0.0)
     gripper: float = 1.0
     connected: bool = True
@@ -17,7 +17,7 @@ class MockGuideArm:
 
 
 @dataclass
-class MockRobotArm:
+class SimulatedRobotArm:
     joints: tuple[float, ...] = (0.0, -0.8, 1.2, 0.0, 0.8, 0.0)
     gripper: float = 1.0
     connected: bool = True
@@ -40,7 +40,7 @@ class MockRobotArm:
 
 
 @dataclass
-class MockCamera:
+class SimulatedCamera:
     width: int = 640
     height: int = 480
     frame_id: int = 0
@@ -51,4 +51,3 @@ class MockCamera:
             return None
         self.frame_id += 1
         return CameraFrame(frame_id=self.frame_id, timestamp=time(), width=self.width, height=self.height, payload=None)
-

@@ -13,7 +13,7 @@ class Mode(ABC):
 
     @abstractmethod
     def tick(self, context: SystemContext) -> RobotCommand:
-        raise NotImplementedError
+        """Return the command for one control cycle."""
 
     def exit(self, context: SystemContext) -> None:
         context.recorder.record_event("mode_exit", {"mode": self.name})
@@ -24,4 +24,3 @@ class HoldMode(Mode):
 
     def tick(self, context: SystemContext) -> RobotCommand:
         return RobotCommand.hold("safe idle")
-

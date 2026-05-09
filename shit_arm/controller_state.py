@@ -7,6 +7,7 @@ from time import time
 from typing import Any
 
 from shit_arm.perception.pose import TablePoseEstimator
+from shit_arm.robot_model import load_robot_model
 from shit_arm.types import MotionEstimate, Pose, SystemContext, TrackedObject
 
 
@@ -29,6 +30,12 @@ def build_controller_state(context: SystemContext, frame_image_path: Path | None
             "joints": context.robot_state.joints,
             "gripper": context.robot_state.gripper,
         },
+        "guide": {
+            "connected": context.guide_state.connected,
+            "joints": context.guide_state.joints,
+            "gripper": context.guide_state.gripper,
+            "world": _pose_dict(context.guide_state.pose),
+        },
         "gripper": {
             "pixel": _point_dict(gripper_pixel),
             "world": _pose_dict(gripper_world),
@@ -45,6 +52,12 @@ def build_controller_state(context: SystemContext, frame_image_path: Path | None
             "faults": context.safety.faults,
             "warnings": context.safety.warnings,
         },
+        "calibration": {
+            "joint_limits": context.calibration.joint_limits,
+            "home_joints": context.calibration.home_joints,
+            "workspace_xyz": context.calibration.workspace_xyz,
+        },
+        "robot_model": load_robot_model(),
     }
 
 
@@ -64,7 +77,7 @@ def write_controller_frame(context: SystemContext, path: Path) -> Path:
     payload = frame.payload
     if payload is None:
         output_path = path.with_suffix(".svg")
-        _write_placeholder_svg(output_path, frame.width, frame.height, frame.frame_id)
+        _write_status_svg(output_path, frame.width, frame.height, frame.frame_id)
         return output_path
     output_path = path.with_suffix(".jpg")
     if _write_with_pillow(payload, output_path):
@@ -72,7 +85,7 @@ def write_controller_frame(context: SystemContext, path: Path) -> Path:
     if _write_with_cv2(payload, output_path):
         return output_path
     output_path = path.with_suffix(".svg")
-    _write_placeholder_svg(output_path, frame.width, frame.height, frame.frame_id)
+    _write_status_svg(output_path, frame.width, frame.height, frame.frame_id)
     return output_path
 
 
@@ -150,7 +163,7 @@ def _write_with_cv2(payload: Any, path: Path) -> bool:
         return False
 
 
-def _write_placeholder_svg(path: Path, width: int, height: int, frame_id: int) -> None:
+def _write_status_svg(path: Path, width: int, height: int, frame_id: int) -> None:
     width = width or 640
     height = height or 480
     _atomic_write_text(

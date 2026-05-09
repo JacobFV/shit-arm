@@ -1,3 +1,3 @@
-from shit_arm.hardware.mock import MockCamera, MockGuideArm, MockRobotArm
+from shit_arm.hardware.simulated import SimulatedCamera, SimulatedGuideArm, SimulatedRobotArm
 
-__all__ = ["MockCamera", "MockGuideArm", "MockRobotArm"]
+__all__ = ["SimulatedCamera", "SimulatedGuideArm", "SimulatedRobotArm"]
