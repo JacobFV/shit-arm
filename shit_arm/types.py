@@ -40,6 +40,17 @@ class CommandKind(str, Enum):
     COMPOSITE = "composite"
 
 
+class TrackStatus(str, Enum):
+    TENTATIVE = "tentative"
+    STABLE = "stable"
+    SELECTED = "selected"
+    PICKING = "picking"
+    PICKED = "picked"
+    DROPPED = "dropped"
+    LOST = "lost"
+    REJECTED = "rejected"
+
+
 @dataclass(frozen=True)
 class Pose:
     x: float
@@ -115,13 +126,47 @@ class Detection:
     bbox_xywh: tuple[float, float, float, float]
     table_pose: Pose | None = None
     target_bin: str | None = None
+    mask: Any = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class TrackedObject:
+    track_id: int
+    label: str
+    confidence: float
+    bbox_xywh: tuple[float, float, float, float]
+    smoothed_bbox_xywh: tuple[float, float, float, float]
+    table_pose: Pose | None = None
+    target_bin: str | None = None
+    age_frames: int = 1
+    missed_frames: int = 0
+    stable_frames: int = 0
+    status: TrackStatus = TrackStatus.TENTATIVE
+    last_seen_frame_id: int | None = None
+    score: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def as_detection(self) -> Detection:
+        return Detection(
+            label=self.label,
+            confidence=self.confidence,
+            bbox_xywh=self.smoothed_bbox_xywh,
+            table_pose=self.table_pose,
+            target_bin=self.target_bin,
+            metadata={"track_id": self.track_id, **self.metadata},
+        )
 
 
 @dataclass
 class PerceptionState:
     detections: list[Detection] = field(default_factory=list)
-    selected: Detection | None = None
+    tracks: list[TrackedObject] = field(default_factory=list)
+    selected: Detection | TrackedObject | None = None
     status: str = "idle"
+    frame_id: int | None = None
+    selected_track_id: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -152,6 +197,7 @@ class Calibration:
             "unknown": Pose(0.0, 0.45, 0.15),
         }
     )
+    image_to_table_homography: tuple[tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]] | None = None
 
 
 @dataclass
@@ -170,4 +216,3 @@ class SystemContext:
     safety: SafetyState = field(default_factory=SafetyState)
     labels: dict[str, str] = field(default_factory=dict)
     options: dict[str, Any] = field(default_factory=dict)
-
