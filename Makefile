@@ -1,4 +1,5 @@
-PYTHON ?= python
+PYTHON ?= uv run python
+UV ?= uv
 NPM ?= npm
 
 MODE ?= vision-monitor
@@ -23,18 +24,23 @@ OPENCV_CAMERA_WIDTH ?= 640
 OPENCV_CAMERA_HEIGHT ?= 480
 OPENCV_CAMERA_FPS ?= 30
 
+WS_PORT ?= 8765
+WS_HOST ?= 127.0.0.1
+WS_BACKEND ?= mock
+
 TRACKER_STABLE_AFTER_FRAMES ?= 3
 TRACKER_MAX_MISSED_FRAMES ?= 8
 SELECTOR_MIN_CONFIDENCE ?= 0.35
 FOREGROUND_MIN_AREA ?= 250
 FOREGROUND_THRESHOLD ?= 55
 
-.PHONY: help install install-python install-node test test-python test-js modes controller controller-state vision vision-mock vision-lerobot mirror-lerobot diagnostics-lerobot clean
+.PHONY: help install install-python install-ws install-node test test-python test-js modes controller controller-state ws-server vision vision-mock vision-lerobot mirror-lerobot diagnostics-lerobot clean
 
 help:
 	@printf '%s\n' \
 		'Targets:' \
-		'  make install              Install Python package and Node controller deps' \
+		'  make install              Install Python package (uv sync) and Node deps' \
+		'  make install-ws           Install Python deps including WebSocket server' \
 		'  make test                 Run Python tests and JS syntax checks' \
 		'  make controller           Start the Electron controller app' \
 		'  make controller-state     Write one mock controller-state JSON snapshot' \
@@ -42,17 +48,24 @@ help:
 		'  make vision-lerobot       Run LeRobot vision with OpenCV camera' \
 		'  make mirror-lerobot       Run LeRobot guide-arm mirror mode' \
 		'  make diagnostics-lerobot  Run LeRobot diagnostics once' \
+		'  make ws-server           Start the WebSocket server (standalone)' \
 		'' \
 		'Common variables:' \
 		'  ROBOT_PORT=/dev/tty... TELEOP_PORT=/dev/tty...' \
 		'  VISION_DETECTOR=mock|color|foreground|yolo' \
 		'  LEROBOT_VISION_DETECTOR=foreground|color|yolo|mock' \
-		'  TICKS=999999 HZ=10 OPENCV_CAMERA_INDEX=0'
+		'  TICKS=999999 HZ=10 OPENCV_CAMERA_INDEX=0' \
+		'  WS_PORT=8765 WS_HOST=127.0.0.1 WS_BACKEND=mock' \
+		'' \
+		'Requires: uv (https://docs.astral.sh/uv/) and npm'
 
 install: install-python install-node
 
 install-python:
-	$(PYTHON) -m pip install -e ".[dev]"
+	$(UV) sync --extra dev
+
+install-ws:
+	$(UV) sync --all-extras
 
 install-node:
 	$(NPM) install
@@ -72,6 +85,16 @@ modes:
 
 controller:
 	$(NPM) start
+
+ws-server:
+	$(PYTHON) -m shit_arm.control.wss \
+		--port $(WS_PORT) \
+		--host $(WS_HOST) \
+		--backend $(WS_BACKEND) \
+		--camera-index $(OPENCV_CAMERA_INDEX) \
+		$(if $(ROBOT_PORT),--robot-port $(ROBOT_PORT),) \
+		$(if $(ENABLE_PERCEPTION),--enable-perception,) \
+		--vision-detector $(VISION_DETECTOR)
 
 controller-state:
 	$(PYTHON) -m shit_arm.cli run vision-monitor \

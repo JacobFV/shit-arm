@@ -305,9 +305,38 @@
   background: #fff;
   border-right: 1px solid var(--panel-border);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 12px 24px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.video-frame {
+  width: 100%;
+  max-height: 280px;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0d0f13;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-frame__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.video-frame__placeholder {
+  padding: 40px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 .cartesian-pad {
@@ -606,4 +635,109 @@
   border: 1px solid var(--panel-border);
   background: #fff;
   border-radius: 2px;
+}
+
+/* ---------- Connection & safety pills ---------- */
+
+.connection-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #8c3b3b;
+  color: #ffd1d1;
+  position: absolute;
+  right: 10px;
+  top: 5px;
+}
+
+.connection-pill.connected {
+  border-color: #2d6b4f;
+  color: #b8f0d1;
+}
+
+.safety-pill {
+  align-self: center;
+  margin-right: 10px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #2d6b4f;
+  color: #b8f0d1;
+}
+
+.safety-pill[data-ok="false"] {
+  border-color: #8c3b3b;
+  color: #ffd1d1;
+}
+
+/* ---------- Side panel info ---------- */
+
+.side__info {
+  background: #fff;
+  border: 1px solid var(--panel-border);
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.info-label {
+  color: var(--text-muted);
+}
+
+/* ---------- Track list ---------- */
+
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.track-list h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.track-card {
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #fff;
+  font-size: 11px;
+}
+
+.track-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.track-card__title {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.track-card__status {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+}
+
+.track-card__body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text);
 }
