@@ -189,6 +189,14 @@ python -m shit_arm.cli run sort --target-label can --ticks 1
 
 The sorting modes prefer selected tracks over raw detections, so closed-loop behavior can keep following the same physical object by `track_id`.
 
+Each track also carries a motion estimate comparing pixel-space and table/world-space movement:
+
+- `pixel_delta`: centroid motion in image pixels.
+- `table_delta`: motion of the estimated world/table pose.
+- `projected_table_delta`: expected table motion from projecting the pixel delta.
+- `table_delta_error`: discrepancy between world motion and projected pixel motion.
+- `consistent`: whether the discrepancy is within tolerance.
+
 Tracker and selector settings are exposed from the CLI:
 
 ```bash
@@ -215,6 +223,37 @@ Then run:
 
 ```bash
 python -m shit_arm.cli run vision-monitor --homography-path calibration/image_to_table.json
+```
+
+## Controller App
+
+The Electron controller app lives in `controller/`. It shows a left sidebar with:
+
+- session/mode status
+- live webcam video in the main workspace
+- gripper pixel coordinate
+- gripper world coordinate
+- every tracked object with pixel coordinate, world coordinate, bin, confidence, score, and motion comparison
+
+Generate a controller state file from Python:
+
+```bash
+python -m shit_arm.cli run vision-monitor \
+  --ticks 5 \
+  --controller-state-path controller/controller-state.json
+```
+
+Run the app:
+
+```bash
+npm install
+npm start
+```
+
+To point the app at another state file:
+
+```bash
+SHIT_ARM_CONTROLLER_STATE=/tmp/shit-arm-controller.json npm start
 ```
 
 ## Next Hardware Work

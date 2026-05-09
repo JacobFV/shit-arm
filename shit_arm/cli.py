@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from shit_arm.app import build_lerobot_context, build_lerobot_opencv_cameras, build_mock_context
+from shit_arm.controller_state import write_controller_state
 from shit_arm.control.runner import ModeRunner
 from shit_arm.modes import mode_names
 from shit_arm.perception import VisionConfig
@@ -22,6 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--hz", type=float, default=10.0)
     run_parser.add_argument("--record", action="store_true")
     run_parser.add_argument("--run-root", type=Path, default=Path("runs"))
+    run_parser.add_argument("--controller-state-path", type=Path)
     run_parser.add_argument("--robot-type", default="so101_follower")
     run_parser.add_argument("--robot-port")
     run_parser.add_argument("--robot-id", default="shit_arm_follower")
@@ -135,6 +137,8 @@ def main(argv: list[str] | None = None) -> int:
         context.options["assistance_level"] = args.assistance_level
 
     result = ModeRunner(context).run(args.mode, ticks=args.ticks, hz=args.hz)
+    if args.controller_state_path:
+        write_controller_state(context, args.controller_state_path)
     print(f"mode={args.mode} ticks={result.ticks} last_command={result.last_command.kind.value} reason={result.last_command.reason}")
     return 0
 
