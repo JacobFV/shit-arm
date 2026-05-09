@@ -80,6 +80,11 @@ Every mode returns a `RobotCommand`:
 
 This means mirror, replay, assisted teleop, and sorting all share the same final safety and hardware path.
 
+## Prerequisites
+lerobot
+feetech
+
+
 ## Next Hardware Work
 
 Implement real adapters with the same methods as the mocks:
