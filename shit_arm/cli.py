@@ -6,6 +6,7 @@ from pathlib import Path
 from shit_arm.app import build_lerobot_context, build_lerobot_opencv_cameras
 from shit_arm.controller_state import write_controller_state
 from shit_arm.control.runner import ModeRunner
+from shit_arm.data.bridge_tool import add_bridge_subparser
 from shit_arm.modes import mode_names
 from shit_arm.perception import VisionConfig
 
@@ -15,6 +16,7 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("modes", help="List available operating modes.")
+    add_bridge_subparser(subparsers)
 
     run_parser = subparsers.add_parser("run", help="Run a mode.")
     run_parser.add_argument("mode", choices=mode_names())
@@ -65,6 +67,8 @@ def main(argv: list[str] | None = None) -> int:
         for name in mode_names():
             print(name)
         return 0
+    if args.command == "bridge":
+        return args.func(args)
 
     should_record = args.record or args.mode in {"record", "teach"}
     vision_config = VisionConfig(

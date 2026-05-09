@@ -34,7 +34,7 @@ SELECTOR_MIN_CONFIDENCE ?= 0.35
 FOREGROUND_MIN_AREA ?= 250
 FOREGROUND_THRESHOLD ?= 55
 
-.PHONY: help install install-python install-ws install-node test test-python test-js modes controller controller-state ws-server vision vision-lerobot mirror-lerobot diagnostics-lerobot clean
+.PHONY: help install install-python install-ws install-node test test-python test-js modes bridge controller controller-state ws-server vision vision-lerobot mirror-lerobot diagnostics-lerobot clean
 
 help:
 	@printf '%s\n' \
@@ -42,6 +42,7 @@ help:
 		'  make install              Install Python package (uv sync) and Node deps' \
 		'  make install-ws           Install Python deps including WebSocket server' \
 		'  make test                 Run Python tests and JS syntax checks' \
+		'  make bridge               Show low-level servo bridge commands' \
 		'  make controller           Start the Electron controller app' \
 		'  make controller-state     Write one real controller-state JSON snapshot' \
 		'  make vision-lerobot       Run LeRobot vision with OpenCV camera' \
@@ -81,6 +82,9 @@ test-js:
 
 modes:
 	$(PYTHON) -m shit_arm.cli modes
+
+bridge:
+	$(PYTHON) -m shit_arm.cli bridge --help
 
 controller:
 	$(NPM) start

@@ -16,6 +16,7 @@ ws = ["fastapi>=0.115", "uvicorn[standard]>=0.34"]
 
 [project.scripts]
 shit-arm = "shit_arm.cli:main"
+shit-arm-bridge = "shit_arm.data.bridge_tool:main"
 
 [tool.setuptools.packages.find]
 include = ["shit_arm*"]

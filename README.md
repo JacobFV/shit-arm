@@ -102,11 +102,30 @@ shit-arm modes
 shit-arm run human-confirm-sort --confirmed --ticks 1
 ```
 
+## Low-Level Servo Bridge
+
+The old one-off bring-up scripts have been consolidated into one CLI:
+
+```bash
+python -m shit_arm.cli bridge --help
+python -m shit_arm.cli bridge scan --port /dev/cu.usbmodem... --ids 0-253
+python -m shit_arm.cli bridge health --port /dev/cu.usbmodem... --ids 1-6
+python -m shit_arm.cli bridge wiggle --port /dev/cu.usbmodem... --ids 1 --ticks 60
+python -m shit_arm.cli bridge torque --port /dev/cu.usbmodem... --ids 1-6 --disable
+python -m shit_arm.cli bridge identify --port /dev/cu.usbmodem...
+python -m shit_arm.cli bridge demo --port /dev/cu.usbmodem... --profile full
+python -m shit_arm.cli bridge verify-move --port /dev/cu.usbmodem... --id 1
+python -m shit_arm.cli bridge aruco-tags --out aruco_sheet.png
+```
+
+After installation, the same tool is available as `shit-arm-bridge`.
+
 ## Makefile
 
 ```bash
 make install            # Install Python + Node deps
 make test               # Run Python tests + JS syntax checks
+make bridge             # Show low-level servo bridge commands
 make controller         # Start Electron controller app
 make ws-server          # Start WebSocket server
 make vision-lerobot     # Run LeRobot vision with OpenCV camera
