@@ -56,6 +56,33 @@ shit-arm modes
 shit-arm run human-confirm-sort --confirmed --ticks 1
 ```
 
+## Makefile
+
+Common workflows are wrapped in `make` targets:
+
+```bash
+make install
+make test
+make controller-state
+make controller
+make vision-mock
+```
+
+For LeRobot hardware, pass ports as variables:
+
+```bash
+make vision-lerobot \
+  ROBOT_PORT=/dev/tty.usbmodem585A0076841 \
+  TELEOP_PORT=/dev/tty.usbmodem575E0031751 \
+  VISION_DETECTOR=foreground
+
+make mirror-lerobot \
+  ROBOT_PORT=/dev/tty.usbmodem585A0076841 \
+  TELEOP_PORT=/dev/tty.usbmodem575E0031751
+```
+
+Use `make help` for the full target list and configurable variables.
+
 ## LeRobot Hardware Backend
 
 The real hardware path is designed around LeRobot's follower/leader split:
