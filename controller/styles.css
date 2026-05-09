@@ -153,9 +153,53 @@ pre {
   align-items: center;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tabs {
+  display: inline-flex;
+  border: 1px solid #2b3038;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #171a20;
+}
+
+.tab {
+  min-width: 112px;
+  height: 34px;
+  border: 0;
+  border-right: 1px solid #2b3038;
+  background: transparent;
+  color: #aeb7c4;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tab:last-child {
+  border-right: 0;
+}
+
+.tab.active {
+  background: #253040;
+  color: #f4f7fb;
+}
+
 .timestamp {
   color: #8994a5;
   font-size: 12px;
+}
+
+.view {
+  display: none;
+  min-height: 0;
+}
+
+.view.active {
+  display: block;
 }
 
 .viewport {
@@ -167,9 +211,35 @@ pre {
   overflow: hidden;
 }
 
+.simulation-view.active {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+}
+
+.arm-sim,
+.proprio-panel {
+  min-height: 0;
+  border: 1px solid #2b3038;
+  border-radius: 8px;
+  background: #0d0f13;
+}
+
+.arm-sim {
+  position: relative;
+  overflow: hidden;
+}
+
+.proprio-panel {
+  overflow: auto;
+  padding: 14px;
+  background: #171a20;
+}
+
 img,
 video,
-canvas {
+#canvas,
+#armCanvas {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -185,8 +255,74 @@ img {
   background: #080a0d;
 }
 
-canvas {
+#canvas,
+#armCanvas {
   pointer-events: none;
+}
+
+.arm-sim #armCanvas {
+  display: block;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.arm-sim #armCanvas:active {
+  cursor: grabbing;
+}
+
+.kv.compact div {
+  grid-template-columns: 112px 1fr;
+}
+
+.joint-bars {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.joint-row {
+  display: grid;
+  gap: 6px;
+}
+
+.joint-label,
+.joint-limits {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.joint-label {
+  color: #edf2f7;
+  font-weight: 650;
+}
+
+.joint-limits {
+  color: #8994a5;
+}
+
+.joint-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: #252b35;
+  overflow: hidden;
+}
+
+.joint-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #62d6a8;
+}
+
+.joint-guide {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: #7da7ff;
 }
 
 .webcam-status {
@@ -199,4 +335,35 @@ canvas {
   color: #cbd4e1;
   padding: 7px 9px;
   font-size: 12px;
+}
+
+@media (max-width: 920px) {
+  body {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    height: auto;
+    max-height: 42vh;
+    border-right: 0;
+    border-bottom: 1px solid #2b3038;
+  }
+
+  .workspace {
+    min-height: 58vh;
+  }
+
+  .workspace header,
+  .header-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .simulation-view.active {
+    grid-template-columns: 1fr;
+  }
+
+  .proprio-panel {
+    max-height: 320px;
+  }
 }

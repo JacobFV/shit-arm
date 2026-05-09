@@ -7,6 +7,7 @@ from time import time
 from typing import Any
 
 from shit_arm.perception.pose import TablePoseEstimator
+from shit_arm.robot_model import load_robot_model
 from shit_arm.types import MotionEstimate, Pose, SystemContext, TrackedObject
 
 
@@ -29,6 +30,12 @@ def build_controller_state(context: SystemContext, frame_image_path: Path | None
             "joints": context.robot_state.joints,
             "gripper": context.robot_state.gripper,
         },
+        "guide": {
+            "connected": context.guide_state.connected,
+            "joints": context.guide_state.joints,
+            "gripper": context.guide_state.gripper,
+            "world": _pose_dict(context.guide_state.pose),
+        },
         "gripper": {
             "pixel": _point_dict(gripper_pixel),
             "world": _pose_dict(gripper_world),
@@ -45,6 +52,12 @@ def build_controller_state(context: SystemContext, frame_image_path: Path | None
             "faults": context.safety.faults,
             "warnings": context.safety.warnings,
         },
+        "calibration": {
+            "joint_limits": context.calibration.joint_limits,
+            "home_joints": context.calibration.home_joints,
+            "workspace_xyz": context.calibration.workspace_xyz,
+        },
+        "robot_model": load_robot_model(),
     }
 
 

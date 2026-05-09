@@ -50,13 +50,34 @@
           <h2>Tracked Workspace</h2>
           <p>Pixel and world coordinates update from the controller state file.</p>
         </div>
-        <div id="updatedAt" class="timestamp">-</div>
+        <div class="header-controls">
+          <div class="tabs" role="tablist" aria-label="Controller views">
+            <button id="workspaceTab" class="tab active" type="button" role="tab" aria-selected="true" data-view="workspace">Workspace</button>
+            <button id="simTab" class="tab" type="button" role="tab" aria-selected="false" data-view="simulation">Simulation</button>
+          </div>
+          <div id="updatedAt" class="timestamp">-</div>
+        </div>
       </header>
-      <div class="viewport">
+      <div id="workspaceView" class="viewport view active">
         <img id="pythonFrame" alt="Python camera frame">
         <video id="webcam" autoplay muted playsinline></video>
         <canvas id="canvas" width="960" height="640"></canvas>
         <div id="webcamStatus" class="webcam-status">camera pending</div>
+      </div>
+      <div id="simulationView" class="simulation-view view">
+        <div class="arm-sim">
+          <canvas id="armCanvas" width="960" height="640"></canvas>
+        </div>
+        <aside class="proprio-panel">
+          <section>
+            <h2>Proprioception</h2>
+            <dl id="proprioKv" class="kv compact"></dl>
+          </section>
+          <section>
+            <h2>Joints</h2>
+            <div id="jointBars" class="joint-bars"></div>
+          </section>
+        </aside>
       </div>
     </main>
 

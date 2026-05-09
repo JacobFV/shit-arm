@@ -11,6 +11,12 @@
     "joints": [0, -0.8, 1.2, 0, 0.8, 0],
     "gripper": 1
   },
+  "guide": {
+    "connected": true,
+    "joints": [0, -0.6, 1, 0, 0.6, 0],
+    "gripper": 1,
+    "world": { "x": 0, "y": 0.35, "z": 0.18, "roll": 0, "pitch": 0, "yaw": 0 }
+  },
   "gripper": {
     "pixel": { "x": 320, "y": 240 },
     "world": { "x": 0, "y": 0.35, "z": 0.18, "roll": 0, "pitch": 0, "yaw": 0 }
@@ -53,6 +59,10 @@
     "estop": false,
     "faults": [],
     "warnings": []
+  },
+  "calibration": {
+    "joint_limits": [[-3.14, 3.14], [-3.14, 3.14], [-3.14, 3.14], [-3.14, 3.14], [-3.14, 3.14], [-3.14, 3.14]],
+    "home_joints": [0, -0.8, 1.2, 0, 0.8, 0],
+    "workspace_xyz": [[-0.35, 0.35], [0.05, 0.65], [0, 0.45]]
   }
 }
-
