@@ -7,7 +7,7 @@ from shit_arm.app import build_lerobot_context, build_lerobot_opencv_cameras
 from shit_arm.controller_state import write_controller_state
 from shit_arm.control.runner import ModeRunner
 from shit_arm.data.bridge_tool import add_bridge_subparser
-from shit_arm.modes import mode_names
+from shit_arm.modes import mode_descriptions, mode_names
 from shit_arm.perception import VisionConfig
 
 
@@ -15,7 +15,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="shit-arm")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("modes", help="List available operating modes.")
+    modes_parser = subparsers.add_parser("modes", help="List available operating modes.")
+    modes_parser.add_argument("--names-only", action="store_true", help="Print only mode names, one per line.")
     add_bridge_subparser(subparsers)
 
     run_parser = subparsers.add_parser("run", help="Run a mode.")
@@ -64,8 +65,12 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "modes":
-        for name in mode_names():
-            print(name)
+        if args.names_only:
+            for name in mode_names():
+                print(name)
+        else:
+            for name, description in mode_descriptions().items():
+                print(f"{name:20s} {description}")
         return 0
     if args.command == "bridge":
         return args.func(args)

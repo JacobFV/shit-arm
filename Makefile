@@ -34,14 +34,16 @@ SELECTOR_MIN_CONFIDENCE ?= 0.35
 FOREGROUND_MIN_AREA ?= 250
 FOREGROUND_THRESHOLD ?= 55
 
-.PHONY: help install install-python install-ws install-node test test-python test-js modes bridge controller controller-state ws-server vision vision-lerobot mirror-lerobot diagnostics-lerobot clean
+.PHONY: help install install-python install-ws install-bridge install-node test test-python test-js lint-js build-ui modes bridge ui controller controller-state ws-server vision vision-lerobot mirror-lerobot diagnostics-lerobot clean clobber
 
 help:
 	@printf '%s\n' \
 		'Targets:' \
-		'  make install              Install Python package (uv sync) and Node deps' \
+		'  make install              Install WebSocket Python deps and Node deps' \
 		'  make install-ws           Install Python deps including WebSocket server' \
+		'  make install-bridge       Install Python deps including bridge tools' \
 		'  make test                 Run Python tests and JS syntax checks' \
+		'  make ui                   Start the React UI dev server' \
 		'  make bridge               Show low-level servo bridge commands' \
 		'  make controller           Start the Electron controller app' \
 		'  make controller-state     Write one real controller-state JSON snapshot' \
@@ -59,13 +61,16 @@ help:
 		'' \
 		'Requires: uv (https://docs.astral.sh/uv/) and npm'
 
-install: install-python install-node
+install: install-ws install-node
 
 install-python:
 	$(UV) sync --extra dev
 
 install-ws:
-	$(UV) sync --all-extras
+	$(UV) sync --extra dev --extra ws
+
+install-bridge:
+	$(UV) sync --extra dev --extra bridge
 
 install-node:
 	$(NPM) install
@@ -73,18 +78,24 @@ install-node:
 test: test-python test-js
 
 test-python:
-	$(PYTHON) tests/run_tests.py
+	$(UV) run --extra dev pytest
 
-test-js:
-	node --check controller/main.js
-	node --check controller/preload.js
-	node --check controller/renderer.js
+test-js: lint-js
+
+lint-js:
+	$(NPM) test
+
+build-ui:
+	$(NPM) run build:ui
 
 modes:
 	$(PYTHON) -m shit_arm.cli modes
 
 bridge:
 	$(PYTHON) -m shit_arm.cli bridge --help
+
+ui:
+	$(NPM) run ui
 
 controller:
 	$(NPM) start
@@ -173,3 +184,8 @@ clean:
 	find . \( -name __pycache__ -o -name '*.pyc' \) -prune -exec rm -rf {} +
 	rm -f $(CONTROLLER_STATE)
 	rm -f $(CONTROLLER_FRAME) controller/latest-frame.svg
+
+clobber: clean
+	rm -rf node_modules shit_arm.egg-info .pytest_cache
+	rm -rf controller/node_modules shit_arm/control/UI/node_modules
+	rm -rf shit_arm/control/UI/dist

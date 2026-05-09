@@ -7,14 +7,14 @@ The runtime backend is LeRobot hardware. The app reads real follower/leader stat
 ## Quick Start
 
 ```bash
-# Install Python deps (uses uv)
-make install-ws
+# Install Python + Node deps
+make install
 
 # Start the WebSocket server
 make ws-server
 
 # Open the React UI (separate terminal)
-cd shit_arm/control/UI && npm run dev
+make ui
 
 # Open the Electron view (separate terminal)
 make controller
@@ -48,7 +48,7 @@ make ws-server WS_BACKEND=lerobot ROBOT_PORT=/dev/tty...
 | App | Stack | What it shows |
 |-----|-------|---------------|
 | React UI (`shit_arm/control/UI/`) | Vite + React 19 + TS 6 | Joint controls, cartesian jog pad, video frame, tool position, gripper, object tracks, speed settings, current chart |
-| Electron (`controller/`) | Electron 31 | Webcam feed with tracking overlay, 3D arm view, proprioception panel |
+| Electron (`controller/`) | Electron 42 | Webcam feed with tracking overlay, 3D arm view, proprioception panel |
 
 Both connect to the WebSocket server. The React UI sends control commands;
 the Electron view is read-only for the overlay.
@@ -120,11 +120,19 @@ python -m shit_arm.cli bridge aruco-tags --out aruco_sheet.png
 
 After installation, the same tool is available as `shit-arm-bridge`.
 
+Servo bus commands also require the Feetech `scservo_sdk` package to be
+installed in the environment. The `bridge` extra installs the Python packages
+that are available from PyPI for serial probing and ArUco tag generation.
+
 ## Makefile
 
 ```bash
 make install            # Install Python + Node deps
+make install-ws         # Install Python deps for the WebSocket server
+make install-bridge     # Install Python deps for bridge helpers
 make test               # Run Python tests + JS syntax checks
+make ui                 # Start React UI dev server
+make build-ui           # Build React UI
 make bridge             # Show low-level servo bridge commands
 make controller         # Start Electron controller app
 make ws-server          # Start WebSocket server

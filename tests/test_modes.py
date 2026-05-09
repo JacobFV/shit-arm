@@ -7,6 +7,7 @@ from shit_arm.app import _lerobot_calibration
 from shit_arm.control.runner import ModeRunner
 from shit_arm.data import NullRecorder
 from shit_arm.hardware.lerobot_adapter import LeRobotFollowerArm, _numeric_feature_keys, _position_keys
+from shit_arm.modes import MODE_CLASSES, mode_descriptions, mode_names
 from shit_arm.perception.detectors import ForegroundDetector
 from shit_arm.perception.pipeline import VisionPipeline
 from shit_arm.types import ArmState, Calibration, CameraFrame, CommandKind, Pose, RobotCommand, SystemContext
@@ -18,7 +19,7 @@ def run_mode(name: str, ticks: int = 1):
 
 
 @dataclass
-class TestGuideArm:
+class FakeGuideArm:
     joints: tuple[float, ...] = (0.0, -0.6, 1.0, 0.0, 0.6, 0.0)
     gripper: float = 1.0
 
@@ -27,7 +28,7 @@ class TestGuideArm:
 
 
 @dataclass
-class TestRobotArm:
+class FakeRobotArm:
     joints: tuple[float, ...] = (0.0, -0.8, 1.2, 0.0, 0.8, 0.0)
     gripper: float = 1.0
     applied: list[RobotCommand] = field(default_factory=list)
@@ -44,7 +45,7 @@ class TestRobotArm:
 
 
 @dataclass
-class TestCamera:
+class FakeCamera:
     frame_id: int = 0
 
     def read(self) -> CameraFrame:
@@ -59,9 +60,9 @@ class TestCamera:
 def build_test_context() -> SystemContext:
     return SystemContext(
         mode_name="safe-idle",
-        robot=TestRobotArm(),
-        guide=TestGuideArm(),
-        camera=TestCamera(),
+        robot=FakeRobotArm(),
+        guide=FakeGuideArm(),
+        camera=FakeCamera(),
         recorder=NullRecorder(),
         perception=VisionPipeline(detector=ForegroundDetector(min_area=50)),
         calibration=Calibration(),
@@ -151,3 +152,9 @@ def test_lerobot_adapter_sends_cartesian_action_when_features_exist() -> None:
     follower.apply(RobotCommand.pose(Pose(0.1, 0.2, 0.3)))
 
     assert follower.robot.actions == [{"cartesian.x": 0.1, "cartesian.y": 0.2, "cartesian.z": 0.3, "gripper.pos": 0.0}]
+
+
+def test_all_advertised_modes_have_descriptions() -> None:
+    assert set(mode_names()) == set(MODE_CLASSES)
+    assert set(mode_descriptions()) == set(MODE_CLASSES)
+    assert all(mode_descriptions().values())

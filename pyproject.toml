@@ -12,7 +12,8 @@ dependencies = ["lerobot"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
-ws = ["fastapi>=0.115", "uvicorn[standard]>=0.34"]
+ws = ["fastapi>=0.115", "numpy>=2", "uvicorn[standard]>=0.34"]
+bridge = ["numpy>=2", "opencv-contrib-python>=4.10", "pillow>=10", "pyserial>=3.5"]
 
 [project.scripts]
 shit-arm = "shit_arm.cli:main"
@@ -23,3 +24,6 @@ include = ["shit_arm*"]
 
 [tool.setuptools.package-data]
 shit_arm = ["assets/urdf/*.urdf"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from shit_arm.types import RobotCommand, Pose, ArmState, SafetyState
 from shit_arm.perception import build_vision_pipeline, VisionConfig
-from shit_arm.controller_state import build_controller_state
+from shit_arm.state import build_controller_state
 
 
 class ArmStateServer:

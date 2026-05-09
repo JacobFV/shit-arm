@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from shit_arm.controller_state import build_controller_state
 from shit_arm.control.runner import ModeRunner
+from shit_arm.state import build_controller_state
 from test_modes import build_test_context
 
 
