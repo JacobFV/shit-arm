@@ -25,7 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from shit_arm.types import RobotCommand, Pose, ArmState, SafetyState
 from shit_arm.perception import build_vision_pipeline, VisionConfig
 from shit_arm.controller_state import build_controller_state
-from shit_arm.hardware.mock import MockRobotArm, MockCamera
+from shit_arm.hardware.simulated import SimulatedRobotArm
 
 
 class ArmStateServer:
@@ -54,7 +54,7 @@ class ArmStateServer:
             from shit_arm.hardware.lerobot_adapter import LeRobotFollowerArm
             self.robot = LeRobotFollowerArm(port=robot_port, robot_type=robot_type, robot_id=robot_id)
         else:
-            self.robot = MockRobotArm()
+            self.robot = SimulatedRobotArm()
 
         self.cap: cv2.VideoCapture | None = None
         self._open_camera(camera_index, camera_width, camera_height, camera_fps)
@@ -280,7 +280,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="shit-arm WebSocket server")
     parser.add_argument("--port", type=int, default=8765, help="WebSocket server port")
     parser.add_argument("--host", default="127.0.0.1", help="Bind address")
-    parser.add_argument("--backend", choices=["mock", "lerobot"], default="mock")
+    parser.add_argument("--backend", choices=["sim", "lerobot"], default="sim")
     parser.add_argument("--robot-port", help="Serial port for LeRobot follower")
     parser.add_argument("--robot-type", default="so101_follower")
     parser.add_argument("--robot-id", default="shit_arm_follower")

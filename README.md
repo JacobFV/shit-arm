@@ -294,6 +294,68 @@ Then run:
 python -m shit_arm.cli run vision-monitor --homography-path calibration/image_to_table.json
 ```
 
+## Switching to Real Robot Hardware
+
+The WebSocket server defaults to simulated joints. To stream live data from
+a real LeRobot arm:
+
+### 1. Find your robot's serial port
+
+```bash
+lerobot-find-port
+# or
+ls /dev/cu.usbmodem*
+```
+
+### 2. Calibrate the motors
+
+```bash
+lerobot-calibrate \
+  --robot.type=so101_follower \
+  --robot.port=/dev/tty.usbmodemXXXXX \
+  --robot.id=shit_arm_follower
+```
+
+### 3. Start the WS server with the hardware backend
+
+```bash
+make ws-server WS_BACKEND=lerobot \
+  ROBOT_PORT=/dev/tty.usbmodemXXXXX \
+  ROBOT_TYPE=so101_follower \
+  OPENCV_CAMERA_INDEX=0
+```
+
+Or directly:
+
+```bash
+uv run python -m shit_arm.control.wss \
+  --backend lerobot \
+  --robot-port /dev/tty.usbmodemXXXXX \
+  --robot-type so101_follower \
+  --camera-index 0 \
+  --fps 20
+```
+
+### How data flows
+
+```
+LeRobotFollowerArm.read_state()
+  → ArmState(joints=[6 floats], pose=Pose(x,y,z,roll,pitch,yaw), gripper=float)
+  → WebSocket JSON broadcast (~20Hz)
+  → React UI displays joint rows, tool position, gripper
+  → Electron renders canvas overlay + 3D arm sim
+
+Commands from React:
+  jog_joint(0, +0.05) → LeRobotFollowerArm.apply(RobotCommand.joints(...))
+  jog_cartesian("x", 0.01) → Pose offset → apply(RobotCommand.pose(...))
+  gripper(0.5) → apply(RobotCommand.gripper_to(...))
+```
+
+The `robot.joints` array follows SO-101 convention:
+`[shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]`
+
+For SO-100, use `--robot-type so100_follower`.
+
 ## Legacy Controller State (file-based)
 
 Generate a controller state file from Python (legacy, for tools that don't use WebSocket):
