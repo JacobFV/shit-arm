@@ -8,3 +8,5 @@ build/
 *.egg-info/
 runs/
 controller/controller-state.json
+controller/latest-frame.jpg
+controller/latest-frame.svg

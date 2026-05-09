@@ -267,8 +267,11 @@ Generate a controller state file from Python:
 ```bash
 python -m shit_arm.cli run vision-monitor \
   --ticks 5 \
-  --controller-state-path controller/controller-state.json
+  --controller-state-path controller/controller-state.json \
+  --controller-frame-path controller/latest-frame.jpg
 ```
+
+The controller prefers the frame exported by Python. If no exported frame exists, it falls back to opening the laptop webcam directly, but that fallback is only a preview and is not the detector input.
 
 Run the app:
 

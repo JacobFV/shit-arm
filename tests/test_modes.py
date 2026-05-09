@@ -47,6 +47,17 @@ def test_human_confirm_sorts_with_confirmation() -> None:
     assert result.last_command.kind == CommandKind.COMPOSITE
 
 
+def test_runner_calls_on_tick_for_live_exports() -> None:
+    context = build_mock_context()
+    calls = []
+    ModeRunner(context, on_tick=lambda tick_context: calls.append(tick_context.camera_frame.frame_id)).run(
+        "vision-monitor",
+        ticks=3,
+        hz=0,
+    )
+    assert calls == [1, 2, 3]
+
+
 def test_lerobot_feature_keys_preserve_position_order() -> None:
     keys = _numeric_feature_keys({"shoulder_pan.pos": float, "front": (640, 480, 3), "gripper.pos": float})
     assert keys == ("shoulder_pan.pos", "gripper.pos")

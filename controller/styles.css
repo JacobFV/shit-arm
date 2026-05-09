@@ -167,6 +167,7 @@ pre {
   overflow: hidden;
 }
 
+img,
 video,
 canvas {
   position: absolute;
@@ -177,6 +178,10 @@ canvas {
 }
 
 video {
+  background: #080a0d;
+}
+
+img {
   background: #080a0d;
 }
 

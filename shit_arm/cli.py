@@ -24,6 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--record", action="store_true")
     run_parser.add_argument("--run-root", type=Path, default=Path("runs"))
     run_parser.add_argument("--controller-state-path", type=Path)
+    run_parser.add_argument("--controller-frame-path", type=Path)
     run_parser.add_argument("--robot-type", default="so101_follower")
     run_parser.add_argument("--robot-port")
     run_parser.add_argument("--robot-id", default="shit_arm_follower")
@@ -136,9 +137,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.assistance_level is not None:
         context.options["assistance_level"] = args.assistance_level
 
-    result = ModeRunner(context).run(args.mode, ticks=args.ticks, hz=args.hz)
+    on_tick = None
     if args.controller_state_path:
-        write_controller_state(context, args.controller_state_path)
+        on_tick = lambda tick_context: write_controller_state(
+            tick_context,
+            args.controller_state_path,
+            args.controller_frame_path,
+        )
+    result = ModeRunner(context, on_tick=on_tick).run(args.mode, ticks=args.ticks, hz=args.hz)
     print(f"mode={args.mode} ticks={result.ticks} last_command={result.last_command.kind.value} reason={result.last_command.reason}")
     return 0
 

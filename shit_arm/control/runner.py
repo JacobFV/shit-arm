@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from time import monotonic, sleep
 
@@ -15,9 +16,15 @@ class RunResult:
 
 
 class ModeRunner:
-    def __init__(self, context: SystemContext, safety: SafetyController | None = None) -> None:
+    def __init__(
+        self,
+        context: SystemContext,
+        safety: SafetyController | None = None,
+        on_tick: Callable[[SystemContext], None] | None = None,
+    ) -> None:
         self.context = context
         self.safety = safety or SafetyController()
+        self.on_tick = on_tick
 
     def run(self, mode_name: str, ticks: int = 1, hz: float = 10.0) -> RunResult:
         self.context.mode_name = mode_name
@@ -33,6 +40,8 @@ class ModeRunner:
                 safe_command = self.safety.filter(command, self.context)
                 self.context.robot.apply(safe_command)
                 self.context.recorder.record_tick(self.context, safe_command)
+                if self.on_tick is not None:
+                    self.on_tick(self.context)
                 last_command = safe_command
                 remaining = period - (monotonic() - started)
                 if remaining > 0 and tick + 1 < ticks:
@@ -49,4 +58,3 @@ class ModeRunner:
             self.context.camera_frame,
             self.context.calibration,
         )
-

@@ -5,8 +5,10 @@ MODE ?= vision-monitor
 BACKEND ?= mock
 TICKS ?= 999999
 HZ ?= 10
-VISION_DETECTOR ?= foreground
+VISION_DETECTOR ?= mock
+LEROBOT_VISION_DETECTOR ?= foreground
 CONTROLLER_STATE ?= controller/controller-state.json
+CONTROLLER_FRAME ?= controller/latest-frame.jpg
 HOMOGRAPHY_PATH ?=
 
 ROBOT_TYPE ?= so101_follower
@@ -43,7 +45,8 @@ help:
 		'' \
 		'Common variables:' \
 		'  ROBOT_PORT=/dev/tty... TELEOP_PORT=/dev/tty...' \
-		'  VISION_DETECTOR=foreground|mock|color|yolo' \
+		'  VISION_DETECTOR=mock|color|foreground|yolo' \
+		'  LEROBOT_VISION_DETECTOR=foreground|color|yolo|mock' \
 		'  TICKS=999999 HZ=10 OPENCV_CAMERA_INDEX=0'
 
 install: install-python install-node
@@ -74,7 +77,8 @@ controller-state:
 	$(PYTHON) -m shit_arm.cli run vision-monitor \
 		--ticks 3 \
 		--vision-detector mock \
-		--controller-state-path $(CONTROLLER_STATE)
+		--controller-state-path $(CONTROLLER_STATE) \
+		--controller-frame-path $(CONTROLLER_FRAME)
 
 vision: vision-mock
 
@@ -90,7 +94,8 @@ vision-mock:
 		--foreground-min-area $(FOREGROUND_MIN_AREA) \
 		--foreground-threshold $(FOREGROUND_THRESHOLD) \
 		$(if $(HOMOGRAPHY_PATH),--homography-path $(HOMOGRAPHY_PATH),) \
-		--controller-state-path $(CONTROLLER_STATE)
+		--controller-state-path $(CONTROLLER_STATE) \
+		--controller-frame-path $(CONTROLLER_FRAME)
 
 vision-lerobot:
 	$(PYTHON) -m shit_arm.cli run $(MODE) \
@@ -108,14 +113,15 @@ vision-lerobot:
 		--opencv-camera-fps $(OPENCV_CAMERA_FPS) \
 		--ticks $(TICKS) \
 		--hz $(HZ) \
-		--vision-detector $(VISION_DETECTOR) \
+		--vision-detector $(LEROBOT_VISION_DETECTOR) \
 		--tracker-stable-after-frames $(TRACKER_STABLE_AFTER_FRAMES) \
 		--tracker-max-missed-frames $(TRACKER_MAX_MISSED_FRAMES) \
 		--selector-min-confidence $(SELECTOR_MIN_CONFIDENCE) \
 		--foreground-min-area $(FOREGROUND_MIN_AREA) \
 		--foreground-threshold $(FOREGROUND_THRESHOLD) \
 		$(if $(HOMOGRAPHY_PATH),--homography-path $(HOMOGRAPHY_PATH),) \
-		--controller-state-path $(CONTROLLER_STATE)
+		--controller-state-path $(CONTROLLER_STATE) \
+		--controller-frame-path $(CONTROLLER_FRAME)
 
 mirror-lerobot:
 	$(PYTHON) -m shit_arm.cli run mirror \
@@ -143,3 +149,4 @@ diagnostics-lerobot:
 clean:
 	find . \( -name __pycache__ -o -name '*.pyc' \) -prune -exec rm -rf {} +
 	rm -f $(CONTROLLER_STATE)
+	rm -f $(CONTROLLER_FRAME) controller/latest-frame.svg

@@ -1,6 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const webcam = document.getElementById('webcam');
+const pythonFrame = document.getElementById('pythonFrame');
 
 const els = {
   statePath: document.getElementById('statePath'),
@@ -33,6 +34,15 @@ function number(value) {
 
 function renderState(payload) {
   const state = payload.state;
+  if (payload.frameImageUrl) {
+    pythonFrame.src = payload.frameImageUrl;
+    pythonFrame.style.display = 'block';
+    webcam.style.display = 'none';
+    els.webcamStatus.textContent = 'python camera frame';
+  } else {
+    pythonFrame.style.display = 'none';
+    webcam.style.display = 'block';
+  }
   els.statePath.textContent = payload.path;
   els.mode.textContent = state.mode || '-';
   els.frame.textContent = `${state.camera?.frame_id ?? '-'} (${state.camera?.width ?? 0}x${state.camera?.height ?? 0})`;
@@ -93,7 +103,7 @@ consistent: ${motion.consistent}`;
 function drawWorkspace(state) {
   resizeCanvasToViewport();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!webcam.srcObject) {
+  if (!webcam.srcObject && !pythonFrame.src) {
     ctx.fillStyle = '#111820';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
@@ -156,9 +166,12 @@ function drawCross(x, y, color, label) {
 
 async function refresh() {
   try {
-    renderState(await window.shitArm.readState());
+    const payload = await window.shitArm.readState();
+    renderState(payload);
+    return Boolean(payload.frameImageUrl);
   } catch (error) {
     els.perception.textContent = `state read failed: ${error.message}`;
+    return false;
   }
 }
 
@@ -192,6 +205,7 @@ function resizeCanvasToViewport() {
   }
 }
 
-startWebcam();
-refresh();
+refresh().then((hasPythonFrame) => {
+  if (!hasPythonFrame) startWebcam();
+});
 setInterval(refresh, 500);
