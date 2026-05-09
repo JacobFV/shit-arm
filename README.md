@@ -2,7 +2,7 @@
 
 Control shell for a guide arm, powered robot arm, and laptop-camera trash-sorting system.
 
-The default local backend is an explicit simulator for development and tests. Real hardware uses LeRobot follower/leader adapters, emits normalized robot commands, passes through a safety filter, and can be recorded.
+The runtime backend is LeRobot hardware. The app reads real follower/leader state, emits normalized robot commands, passes through a safety filter, and can be recorded.
 
 ## Quick Start
 
@@ -24,7 +24,7 @@ Open http://localhost:5173 in a browser for the ARM control panel
 (JointRow, CartesianPad, video frame, gripper, object tracks).
 
 The Electron window shows the webcam feed with workspace overlay (grid,
-gripper cross, track bounding boxes) and a 3D arm simulation view.
+gripper cross, track bounding boxes) and a 3D arm view.
 
 ## WebSocket Server
 
@@ -36,7 +36,7 @@ ws://127.0.0.1:8765/ws
 
 - Broadcasts arm state + camera frames (data URI) at ~10Hz
 - Accepts control commands (jog, gripper, torque, home, stop)
-- Supports `mock` (no hardware) and `lerobot` backends
+- Supports the `lerobot` hardware backend
 - Health check: `GET http://127.0.0.1:8765/health`
 
 ```bash
@@ -48,7 +48,7 @@ make ws-server WS_BACKEND=lerobot ROBOT_PORT=/dev/tty...
 | App | Stack | What it shows |
 |-----|-------|---------------|
 | React UI (`shit_arm/control/UI/`) | Vite + React 19 + TS 6 | Joint controls, cartesian jog pad, video frame, tool position, gripper, object tracks, speed settings, current chart |
-| Electron (`controller/`) | Electron 31 | Webcam feed with tracking overlay, 3D arm simulation, proprioception panel |
+| Electron (`controller/`) | Electron 31 | Webcam feed with tracking overlay, 3D arm view, proprioception panel |
 
 Both connect to the WebSocket server. The React UI sends control commands;
 the Electron view is read-only for the overlay.
@@ -90,9 +90,9 @@ Vision and sorting:
 
 ```bash
 python -m shit_arm.cli modes
-python -m shit_arm.cli run mirror --ticks 3
-python -m shit_arm.cli run vision-monitor --ticks 1
-python -m shit_arm.cli run sort --ticks 1
+python -m shit_arm.cli run mirror --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 3
+python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 1
+python -m shit_arm.cli run sort --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 1
 ```
 
 After installing, the `shit-arm` console command is also available:
@@ -109,7 +109,6 @@ make install            # Install Python + Node deps
 make test               # Run Python tests + JS syntax checks
 make controller         # Start Electron controller app
 make ws-server          # Start WebSocket server
-make vision-sim         # Run simulated vision loop
 make vision-lerobot     # Run LeRobot vision with OpenCV camera
 ```
 
@@ -241,7 +240,6 @@ The detector returns one-frame `Detection` values. The tracker turns those into 
 
 Available detector backends:
 
-- `static`: deterministic can detection for tests and mode development.
 - `color`: dependency-free red-object blob detector for controlled camera bringup.
 - `foreground`: dependency-free object proposal for non-table blobs on a plain table.
 - `yolo`: optional Ultralytics YOLO detector; install with `pip install ultralytics`.
@@ -249,11 +247,10 @@ Available detector backends:
 Examples:
 
 ```bash
-python -m shit_arm.cli run vision-monitor --vision-detector static --ticks 5
-python -m shit_arm.cli run vision-monitor --vision-detector color --ticks 100
-python -m shit_arm.cli run vision-monitor --vision-detector foreground --foreground-min-area 300 --ticks 100
-python -m shit_arm.cli run vision-monitor --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
-python -m shit_arm.cli run sort --target-label can --ticks 1
+python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --vision-detector color --ticks 100
+python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --vision-detector foreground --foreground-min-area 300 --ticks 100
+python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
+python -m shit_arm.cli run sort --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --target-label can --ticks 1
 ```
 
 The sorting modes prefer selected tracks over raw detections, so closed-loop behavior can keep following the same physical object by `track_id`.
@@ -270,6 +267,9 @@ Tracker and selector settings are exposed from the CLI:
 
 ```bash
 python -m shit_arm.cli run vision-monitor \
+  --backend lerobot \
+  --robot-port /dev/tty... \
+  --teleop-port /dev/tty... \
   --vision-detector foreground \
   --tracker-stable-after-frames 3 \
   --tracker-max-missed-frames 8 \
@@ -291,7 +291,7 @@ For calibrated table coordinates, pass a 3x3 image-to-table homography JSON file
 Then run:
 
 ```bash
-python -m shit_arm.cli run vision-monitor --homography-path calibration/image_to_table.json
+python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --homography-path calibration/image_to_table.json
 ```
 
 ## Legacy Controller State (file-based)
@@ -300,6 +300,9 @@ Generate a controller state file from Python (legacy, for tools that don't use W
 
 ```bash
 python -m shit_arm.cli run vision-monitor \
+  --backend lerobot \
+  --robot-port /dev/tty... \
+  --teleop-port /dev/tty... \
   --ticks 5 \
   --controller-state-path controller/controller-state.json \
   --controller-frame-path controller/latest-frame.jpg

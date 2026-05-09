@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Protocol
 
 from shit_arm.types import CameraFrame, Detection, Pose
@@ -9,26 +9,6 @@ from shit_arm.types import CameraFrame, Detection, Pose
 class ObjectDetector(Protocol):
     def detect(self, frame: CameraFrame | None) -> list[Detection]:
         ...
-
-
-@dataclass
-class StaticDetector:
-    detections: list[Detection] = field(
-        default_factory=lambda: [
-            Detection(
-                label="can",
-                confidence=0.82,
-                bbox_xywh=(260.0, 180.0, 80.0, 130.0),
-                table_pose=Pose(0.05, 0.32, 0.04),
-                target_bin="recycling",
-            )
-        ]
-    )
-
-    def detect(self, frame: CameraFrame | None) -> list[Detection]:
-        if frame is None:
-            return []
-        return list(self.detections)
 
 
 @dataclass
@@ -179,15 +159,13 @@ def build_detector(
     foreground_threshold: int = 55,
     foreground_min_area: int = 250,
 ) -> ObjectDetector:
-    if name == "static":
-        return StaticDetector()
     if name == "color":
         return ColorBlobDetector()
     if name == "foreground":
         return ForegroundDetector(threshold=foreground_threshold, min_area=foreground_min_area)
     if name == "yolo":
         return YoloDetector(model_name=yolo_model, min_confidence=yolo_min_confidence, allowed_labels=yolo_labels)
-    raise ValueError(f"unknown vision detector {name!r}; expected static, color, foreground, or yolo")
+    raise ValueError(f"unknown vision detector {name!r}; expected color, foreground, or yolo")
 
 
 def color_distance(pixel: object, rgb: tuple[int, int, int]) -> int:

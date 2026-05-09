@@ -1,10 +1,22 @@
 from __future__ import annotations
 
-from shit_arm.perception.detectors import ForegroundDetector, StaticDetector
+from dataclasses import dataclass
+
+from shit_arm.perception.detectors import ForegroundDetector
 from shit_arm.perception.pipeline import VisionPipeline
 from shit_arm.perception.pose import TablePoseEstimator, apply_homography, invert_3x3
 from shit_arm.perception.tracker import ObjectTracker, iou
 from shit_arm.types import Calibration, CameraFrame, Detection, Pose, TrackStatus
+
+
+@dataclass
+class SequenceDetector:
+    detections: list[Detection]
+
+    def detect(self, frame: CameraFrame | None) -> list[Detection]:
+        if frame is None:
+            return []
+        return list(self.detections)
 
 
 def test_iou_overlap() -> None:
@@ -21,7 +33,7 @@ def test_tracker_keeps_persistent_id_for_nearby_detection() -> None:
 
 def test_vision_pipeline_selects_stable_track() -> None:
     pipeline = VisionPipeline(
-        detector=StaticDetector([Detection("can", 0.9, (260, 180, 80, 130), table_pose=Pose(0.05, 0.32, 0.04))]),
+        detector=SequenceDetector([Detection("can", 0.9, (260, 180, 80, 130), table_pose=Pose(0.05, 0.32, 0.04))]),
         tracker=ObjectTracker(stable_after_frames=1),
     )
     frame = CameraFrame(frame_id=1, width=640, height=480)
@@ -57,12 +69,12 @@ def test_motion_estimate_compares_pixel_and_world_delta() -> None:
         image_to_table_homography=((0.001, 0.0, -0.32), (0.0, 0.001, 0.08), (0.0, 0.0, 1.0))
     )
     pipeline = VisionPipeline(
-        detector=StaticDetector([Detection("can", 0.9, (300, 220, 40, 40))]),
+        detector=SequenceDetector([Detection("can", 0.9, (300, 220, 40, 40))]),
         tracker=ObjectTracker(stable_after_frames=1),
     )
     frame = CameraFrame(1, width=640, height=480)
     pipeline.update(frame, calibration)
-    pipeline.detector = StaticDetector([Detection("can", 0.9, (310, 225, 40, 40))])
+    pipeline.detector = SequenceDetector([Detection("can", 0.9, (310, 225, 40, 40))])
     state = pipeline.update(CameraFrame(2, width=640, height=480), calibration)
     motion = state.tracks[0].motion
     assert motion is not None

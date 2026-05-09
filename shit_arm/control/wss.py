@@ -25,13 +25,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from shit_arm.types import RobotCommand, Pose, ArmState, SafetyState
 from shit_arm.perception import build_vision_pipeline, VisionConfig
 from shit_arm.controller_state import build_controller_state
-from shit_arm.hardware.mock import MockRobotArm, MockCamera
 
 
 class ArmStateServer:
     def __init__(
         self,
-        backend: str = "mock",
+        backend: str = "lerobot",
         robot_port: str | None = None,
         robot_type: str = "so101_follower",
         robot_id: str = "shit_arm_follower",
@@ -40,7 +39,7 @@ class ArmStateServer:
         camera_height: int = 480,
         camera_fps: int = 30,
         enable_perception: bool = False,
-        vision_detector: str = "mock",
+        vision_detector: str = "foreground",
         homography_path: str | None = None,
         fps: int = 10,
     ):
@@ -50,11 +49,12 @@ class ArmStateServer:
         self._fps = fps
         self._robot_state: ArmState | None = None
 
-        if backend == "lerobot":
-            from shit_arm.hardware.lerobot_adapter import LeRobotFollowerArm
-            self.robot = LeRobotFollowerArm(port=robot_port, robot_type=robot_type, robot_id=robot_id)
-        else:
-            self.robot = MockRobotArm()
+        if backend != "lerobot":
+            raise ValueError(f"unsupported backend {backend!r}; expected 'lerobot'")
+        if not robot_port:
+            raise ValueError("robot_port is required for the LeRobot backend")
+        from shit_arm.hardware.lerobot_adapter import LeRobotFollowerArm
+        self.robot = LeRobotFollowerArm(port=robot_port, robot_type=robot_type, robot_id=robot_id)
 
         self.cap: cv2.VideoCapture | None = None
         self._open_camera(camera_index, camera_width, camera_height, camera_fps)
@@ -280,7 +280,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="shit-arm WebSocket server")
     parser.add_argument("--port", type=int, default=8765, help="WebSocket server port")
     parser.add_argument("--host", default="127.0.0.1", help="Bind address")
-    parser.add_argument("--backend", choices=["mock", "lerobot"], default="mock")
+    parser.add_argument("--backend", choices=["lerobot"], default="lerobot")
     parser.add_argument("--robot-port", help="Serial port for LeRobot follower")
     parser.add_argument("--robot-type", default="so101_follower")
     parser.add_argument("--robot-id", default="shit_arm_follower")
@@ -289,7 +289,7 @@ def main() -> None:
     parser.add_argument("--camera-height", type=int, default=480)
     parser.add_argument("--camera-fps", type=int, default=30)
     parser.add_argument("--fps", type=int, default=10, help="Broadcast rate")
-    parser.add_argument("--vision-detector", choices=["mock", "color", "foreground", "yolo"], default="mock")
+    parser.add_argument("--vision-detector", choices=["color", "foreground", "yolo"], default="foreground")
     parser.add_argument("--homography-path")
     parser.add_argument("--enable-perception", action="store_true")
 

@@ -3,10 +3,10 @@ UV ?= uv
 NPM ?= npm
 
 MODE ?= vision-monitor
-BACKEND ?= sim
+BACKEND ?= lerobot
 TICKS ?= 999999
 HZ ?= 10
-VISION_DETECTOR ?= static
+VISION_DETECTOR ?= foreground
 LEROBOT_VISION_DETECTOR ?= foreground
 CONTROLLER_STATE ?= controller/controller-state.json
 CONTROLLER_FRAME ?= controller/latest-frame.jpg
@@ -26,7 +26,7 @@ OPENCV_CAMERA_FPS ?= 30
 
 WS_PORT ?= 8765
 WS_HOST ?= 127.0.0.1
-WS_BACKEND ?= mock
+WS_BACKEND ?= lerobot
 
 TRACKER_STABLE_AFTER_FRAMES ?= 3
 TRACKER_MAX_MISSED_FRAMES ?= 8
@@ -34,7 +34,7 @@ SELECTOR_MIN_CONFIDENCE ?= 0.35
 FOREGROUND_MIN_AREA ?= 250
 FOREGROUND_THRESHOLD ?= 55
 
-.PHONY: help install install-python install-ws install-node test test-python test-js modes controller controller-state ws-server vision vision-sim vision-lerobot mirror-lerobot diagnostics-lerobot clean
+.PHONY: help install install-python install-ws install-node test test-python test-js modes controller controller-state ws-server vision vision-lerobot mirror-lerobot diagnostics-lerobot clean
 
 help:
 	@printf '%s\n' \
@@ -43,8 +43,7 @@ help:
 		'  make install-ws           Install Python deps including WebSocket server' \
 		'  make test                 Run Python tests and JS syntax checks' \
 		'  make controller           Start the Electron controller app' \
-		'  make controller-state     Write one simulated controller-state JSON snapshot' \
-		'  make vision-sim           Run simulated vision and keep controller state updated' \
+		'  make controller-state     Write one real controller-state JSON snapshot' \
 		'  make vision-lerobot       Run LeRobot vision with OpenCV camera' \
 		'  make mirror-lerobot       Run LeRobot guide-arm mirror mode' \
 		'  make diagnostics-lerobot  Run LeRobot diagnostics once' \
@@ -52,10 +51,10 @@ help:
 		'' \
 		'Common variables:' \
 		'  ROBOT_PORT=/dev/tty... TELEOP_PORT=/dev/tty...' \
-		'  VISION_DETECTOR=static|color|foreground|yolo' \
-		'  LEROBOT_VISION_DETECTOR=foreground|color|yolo|static' \
+		'  VISION_DETECTOR=color|foreground|yolo' \
+		'  LEROBOT_VISION_DETECTOR=foreground|color|yolo' \
 		'  TICKS=999999 HZ=10 OPENCV_CAMERA_INDEX=0' \
-		'  WS_PORT=8765 WS_HOST=127.0.0.1 WS_BACKEND=mock' \
+		'  WS_PORT=8765 WS_HOST=127.0.0.1 WS_BACKEND=lerobot' \
 		'' \
 		'Requires: uv (https://docs.astral.sh/uv/) and npm'
 
@@ -99,26 +98,23 @@ ws-server:
 controller-state:
 	$(PYTHON) -m shit_arm.cli run vision-monitor \
 		--ticks 3 \
-		--vision-detector static \
+		--backend lerobot \
+		--robot-type $(ROBOT_TYPE) \
+		--robot-port $(ROBOT_PORT) \
+		--robot-id $(ROBOT_ID) \
+		--teleop-type $(TELEOP_TYPE) \
+		--teleop-port $(TELEOP_PORT) \
+		--teleop-id $(TELEOP_ID) \
+		--camera-key $(CAMERA_KEY) \
+		--opencv-camera-index $(OPENCV_CAMERA_INDEX) \
+		--opencv-camera-width $(OPENCV_CAMERA_WIDTH) \
+		--opencv-camera-height $(OPENCV_CAMERA_HEIGHT) \
+		--opencv-camera-fps $(OPENCV_CAMERA_FPS) \
+		--vision-detector $(LEROBOT_VISION_DETECTOR) \
 		--controller-state-path $(CONTROLLER_STATE) \
 		--controller-frame-path $(CONTROLLER_FRAME)
 
-vision: vision-sim
-
-vision-sim:
-	$(PYTHON) -m shit_arm.cli run $(MODE) \
-		--backend sim \
-		--ticks $(TICKS) \
-		--hz $(HZ) \
-		--vision-detector $(VISION_DETECTOR) \
-		--tracker-stable-after-frames $(TRACKER_STABLE_AFTER_FRAMES) \
-		--tracker-max-missed-frames $(TRACKER_MAX_MISSED_FRAMES) \
-		--selector-min-confidence $(SELECTOR_MIN_CONFIDENCE) \
-		--foreground-min-area $(FOREGROUND_MIN_AREA) \
-		--foreground-threshold $(FOREGROUND_THRESHOLD) \
-		$(if $(HOMOGRAPHY_PATH),--homography-path $(HOMOGRAPHY_PATH),) \
-		--controller-state-path $(CONTROLLER_STATE) \
-		--controller-frame-path $(CONTROLLER_FRAME)
+vision: vision-lerobot
 
 vision-lerobot:
 	$(PYTHON) -m shit_arm.cli run $(MODE) \
