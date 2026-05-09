@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from shit_arm.perception.detectors import StaticDetector
+from shit_arm.perception.pipeline import VisionPipeline
 from shit_arm.types import Calibration, CameraFrame, Detection, PerceptionState, Pose
 
 
 @dataclass
-class MockPerception:
+class MockPerception(VisionPipeline):
     detections: list[Detection] = field(
         default_factory=lambda: [
             Detection(
@@ -20,8 +22,5 @@ class MockPerception:
     )
 
     def update(self, frame: CameraFrame | None, calibration: Calibration) -> PerceptionState:
-        if frame is None:
-            return PerceptionState(status="camera_missing")
-        selected = max(self.detections, key=lambda detection: detection.confidence) if self.detections else None
-        return PerceptionState(detections=list(self.detections), selected=selected, status="ok")
-
+        self.detector = StaticDetector(self.detections)
+        return super().update(frame, calibration)

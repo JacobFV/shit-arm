@@ -50,6 +50,25 @@ class JsonlRecorder:
                 "robot_joints": context.robot_state.joints,
                 "guide_joints": context.guide_state.joints,
                 "camera_frame_id": context.camera_frame.frame_id if context.camera_frame else None,
+                "perception": {
+                    "status": context.perception_state.status,
+                    "selected_track_id": context.perception_state.selected_track_id,
+                    "detections": len(context.perception_state.detections),
+                    "tracks": [
+                        {
+                            "track_id": track.track_id,
+                            "label": track.label,
+                            "confidence": track.confidence,
+                            "target_bin": track.target_bin,
+                            "status": track.status.value,
+                            "bbox_xywh": track.smoothed_bbox_xywh,
+                            "pixel_centroid": track.pixel_centroid,
+                            "score": track.score,
+                            "motion": track.motion,
+                        }
+                        for track in context.perception_state.tracks
+                    ],
+                },
                 "command": _command_dict(command),
             },
         )
@@ -68,4 +87,3 @@ def _command_dict(command: RobotCommand) -> dict[str, Any]:
     if command.children:
         data["children"] = [_command_dict(child) for child in command.children]
     return data
-

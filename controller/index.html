@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>shit-arm controller</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div>
+          <h1>shit-arm</h1>
+          <p id="statePath">controller state</p>
+        </div>
+        <span id="safetyPill" class="pill">idle</span>
+      </div>
+
+      <section>
+        <h2>Session</h2>
+        <dl class="kv">
+          <div><dt>Mode</dt><dd id="mode">-</dd></div>
+          <div><dt>Frame</dt><dd id="frame">-</dd></div>
+          <div><dt>Perception</dt><dd id="perception">-</dd></div>
+          <div><dt>Selected</dt><dd id="selected">-</dd></div>
+        </dl>
+      </section>
+
+      <section>
+        <h2>Gripper</h2>
+        <div class="coord-block">
+          <h3>Pixel</h3>
+          <pre id="gripperPixel">-</pre>
+        </div>
+        <div class="coord-block">
+          <h3>World</h3>
+          <pre id="gripperWorld">-</pre>
+        </div>
+      </section>
+
+      <section>
+        <h2>Objects</h2>
+        <div id="objects" class="objects"></div>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <header>
+        <div>
+          <h2>Tracked Workspace</h2>
+          <p>Pixel and world coordinates update from the controller state file.</p>
+        </div>
+        <div id="updatedAt" class="timestamp">-</div>
+      </header>
+      <div class="viewport">
+        <img id="pythonFrame" alt="Python camera frame">
+        <video id="webcam" autoplay muted playsinline></video>
+        <canvas id="canvas" width="960" height="640"></canvas>
+        <div id="webcamStatus" class="webcam-status">camera pending</div>
+      </div>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

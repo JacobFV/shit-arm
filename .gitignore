@@ -2,8 +2,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+node_modules/
 dist/
 build/
 *.egg-info/
 runs/
-
+controller/controller-state.json
+controller/latest-frame.jpg
+controller/latest-frame.svg

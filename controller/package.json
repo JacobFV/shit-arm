@@ -1,0 +1,14 @@
+{
+  "name": "shit-arm-controller",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron controller UI for shit-arm vision and robot state.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^31.0.0"
+  }
+}
+

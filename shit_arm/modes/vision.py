@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from shit_arm.modes.base import Mode
 from shit_arm.modes.basic import drop_sequence, pose_above
-from shit_arm.types import Detection, Pose, RobotCommand, SystemContext
+from shit_arm.types import Detection, Pose, RobotCommand, SystemContext, TrackedObject
 
 
 class VisionMonitorMode(Mode):
@@ -17,6 +17,8 @@ class VisionMonitorMode(Mode):
                     {"label": d.label, "confidence": d.confidence, "target_bin": d.target_bin}
                     for d in context.perception_state.detections
                 ],
+                "tracks": [_track_payload(track) for track in context.perception_state.tracks],
+                "selected_track_id": context.perception_state.selected_track_id,
             },
         )
         return RobotCommand.hold("vision monitor")
@@ -26,10 +28,10 @@ class VisionPickMode(Mode):
     name = "vision-pick"
 
     def tick(self, context: SystemContext) -> RobotCommand:
-        detection = _choose_detection(context)
-        if not detection or not detection.table_pose:
+        target = _choose_target(context)
+        if not target or not target.table_pose:
             return RobotCommand.hold("no pickable detection")
-        pick = detection.table_pose
+        pick = target.table_pose
         return RobotCommand.composite(
             (
                 RobotCommand.pose(pose_above(pick), speed_scale=0.25, reason="approach object"),
@@ -37,7 +39,7 @@ class VisionPickMode(Mode):
                 RobotCommand.gripper_to(0.0, reason="close gripper"),
                 RobotCommand.pose(pose_above(pick), speed_scale=0.25, reason="lift object"),
             ),
-            reason=f"vision pick {detection.label}",
+            reason=f"vision pick {target.label}",
         )
 
 
@@ -45,7 +47,7 @@ class VisionClosedLoopMode(Mode):
     name = "vision-closed-loop"
 
     def tick(self, context: SystemContext) -> RobotCommand:
-        detection = _choose_detection(context)
+        detection = _choose_target(context)
         min_confidence = float(context.options.get("min_confidence", 0.45))
         if not detection or detection.confidence < min_confidence or not detection.table_pose:
             return RobotCommand.hold("target lost or below confidence")
@@ -56,13 +58,18 @@ class HumanConfirmSortMode(Mode):
     name = "human-confirm-sort"
 
     def tick(self, context: SystemContext) -> RobotCommand:
-        detection = _choose_detection(context)
+        detection = _choose_target(context)
         confirmed = bool(context.options.get("confirmed", False))
         if not detection:
             return RobotCommand.hold("no sort candidate")
         context.recorder.record_event(
             "sort_proposal",
-            {"label": detection.label, "target_bin": detection.target_bin, "confidence": detection.confidence},
+            {
+                "track_id": detection.track_id if isinstance(detection, TrackedObject) else None,
+                "label": detection.label,
+                "target_bin": detection.target_bin,
+                "confidence": detection.confidence,
+            },
         )
         if not confirmed:
             return RobotCommand.hold("waiting for human confirmation")
@@ -73,7 +80,7 @@ class SortMode(Mode):
     name = "sort"
 
     def tick(self, context: SystemContext) -> RobotCommand:
-        detection = _choose_detection(context)
+        detection = _choose_target(context)
         min_confidence = float(context.options.get("min_confidence", 0.55))
         if not detection or detection.confidence < min_confidence:
             return RobotCommand.hold("no confident sort candidate")
@@ -91,20 +98,34 @@ class DatasetMode(Mode):
                 "frame_id": context.camera_frame.frame_id if context.camera_frame else None,
                 "label": label,
                 "detections": len(context.perception_state.detections),
+                "tracks": [_track_payload(track) for track in context.perception_state.tracks],
+                "selected_track_id": context.perception_state.selected_track_id,
             },
         )
         return RobotCommand.hold("dataset capture")
 
 
-def _choose_detection(context: SystemContext) -> Detection | None:
-    if context.perception_state.selected:
+def _choose_target(context: SystemContext) -> Detection | TrackedObject | None:
+    target_track_id = context.options.get("target_track_id")
+    if target_track_id is not None:
+        for track in context.perception_state.tracks:
+            if track.track_id == int(target_track_id):
+                return track
+    target_label = context.options.get("target_label")
+    if target_label:
+        tracks = [track for track in context.perception_state.tracks if track.label == target_label]
+        if tracks:
+            return max(tracks, key=lambda track: track.score)
+    if context.perception_state.selected is not None:
         return context.perception_state.selected
+    if context.perception_state.tracks:
+        return max(context.perception_state.tracks, key=lambda track: track.score)
     if not context.perception_state.detections:
         return None
     return max(context.perception_state.detections, key=lambda detection: detection.confidence)
 
 
-def _sort_command(context: SystemContext, detection: Detection) -> RobotCommand:
+def _sort_command(context: SystemContext, detection: Detection | TrackedObject) -> RobotCommand:
     if not detection.table_pose:
         return RobotCommand.hold("sort candidate has no table pose")
     target_bin = detection.target_bin or _bin_for_label(detection.label)
@@ -132,3 +153,20 @@ def _bin_for_label(label: str) -> str:
         return "landfill"
     return "unknown"
 
+
+def _track_payload(track: TrackedObject) -> dict[str, object]:
+    return {
+        "track_id": track.track_id,
+        "label": track.label,
+        "confidence": track.confidence,
+        "bbox_xywh": track.smoothed_bbox_xywh,
+        "target_bin": track.target_bin,
+        "status": track.status.value,
+        "age_frames": track.age_frames,
+        "missed_frames": track.missed_frames,
+        "stable_frames": track.stable_frames,
+        "score": track.score,
+        "table_pose": track.table_pose,
+        "pixel_centroid": track.pixel_centroid,
+        "motion": track.motion,
+    }
