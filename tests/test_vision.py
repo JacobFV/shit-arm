@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from shit_arm.perception.detectors import ForegroundDetector, StaticDetector
 from shit_arm.perception.pipeline import VisionPipeline
-from shit_arm.perception.pose import TablePoseEstimator, apply_homography
+from shit_arm.perception.pose import TablePoseEstimator, apply_homography, invert_3x3
 from shit_arm.perception.tracker import ObjectTracker, iou
 from shit_arm.types import Calibration, CameraFrame, Detection, Pose, TrackStatus
 
@@ -50,6 +50,33 @@ def test_table_pose_estimator_uses_homography() -> None:
     )
     pose = TablePoseEstimator().bbox_to_table_pose((300, 220, 40, 40), CameraFrame(1, width=640, height=480), calibration)
     assert pose == Pose(0.0, 0.32, 0.04)
+
+
+def test_motion_estimate_compares_pixel_and_world_delta() -> None:
+    calibration = Calibration(
+        image_to_table_homography=((0.001, 0.0, -0.32), (0.0, 0.001, 0.08), (0.0, 0.0, 1.0))
+    )
+    pipeline = VisionPipeline(
+        detector=StaticDetector([Detection("can", 0.9, (300, 220, 40, 40))]),
+        tracker=ObjectTracker(stable_after_frames=1),
+    )
+    frame = CameraFrame(1, width=640, height=480)
+    pipeline.update(frame, calibration)
+    pipeline.detector = StaticDetector([Detection("can", 0.9, (310, 225, 40, 40))])
+    state = pipeline.update(CameraFrame(2, width=640, height=480), calibration)
+    motion = state.tracks[0].motion
+    assert motion is not None
+    assert motion.pixel_delta == (3.5, 1.75)
+    assert motion.projected_table_delta is not None
+    assert round(motion.projected_table_delta[0], 4) == 0.0035
+    assert motion.consistent is True
+
+
+def test_inverse_homography_round_trip() -> None:
+    h = ((0.001, 0.0, -0.32), (0.0, 0.001, 0.08), (0.0, 0.0, 1.0))
+    inverse = invert_3x3(h)
+    assert inverse is not None
+    assert apply_homography(inverse, 0.0, 0.32) == (320.0, 240.0)
 
 
 def test_foreground_detector_finds_non_table_blob() -> None:

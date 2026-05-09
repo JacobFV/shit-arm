@@ -167,4 +167,6 @@ def _track_payload(track: TrackedObject) -> dict[str, object]:
         "stable_frames": track.stable_frames,
         "score": track.score,
         "table_pose": track.table_pose,
+        "pixel_centroid": track.pixel_centroid,
+        "motion": track.motion,
     }

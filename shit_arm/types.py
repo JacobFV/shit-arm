@@ -131,6 +131,18 @@ class Detection:
 
 
 @dataclass
+class MotionEstimate:
+    pixel_delta: tuple[float, float]
+    table_delta: tuple[float, float, float] | None = None
+    projected_table_delta: tuple[float, float, float] | None = None
+    table_delta_error: float | None = None
+    pixel_speed_per_frame: float | None = None
+    table_speed_per_frame: float | None = None
+    frame_delta: int | None = None
+    consistent: bool = True
+
+
+@dataclass
 class TrackedObject:
     track_id: int
     label: str
@@ -144,6 +156,11 @@ class TrackedObject:
     stable_frames: int = 0
     status: TrackStatus = TrackStatus.TENTATIVE
     last_seen_frame_id: int | None = None
+    previous_seen_frame_id: int | None = None
+    pixel_centroid: tuple[float, float] | None = None
+    previous_pixel_centroid: tuple[float, float] | None = None
+    previous_table_pose: Pose | None = None
+    motion: MotionEstimate | None = None
     score: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
 

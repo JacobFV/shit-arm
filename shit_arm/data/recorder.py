@@ -62,7 +62,9 @@ class JsonlRecorder:
                             "target_bin": track.target_bin,
                             "status": track.status.value,
                             "bbox_xywh": track.smoothed_bbox_xywh,
+                            "pixel_centroid": track.pixel_centroid,
                             "score": track.score,
+                            "motion": track.motion,
                         }
                         for track in context.perception_state.tracks
                     ],

@@ -70,6 +70,7 @@ class ObjectTracker:
             target_bin=detection.target_bin,
             stable_frames=1,
             last_seen_frame_id=frame_id,
+            pixel_centroid=bbox_centroid(detection.bbox_xywh),
         )
         if self.stable_after_frames <= 1:
             track.status = TrackStatus.STABLE
@@ -77,6 +78,9 @@ class ObjectTracker:
         return track
 
     def _update_track(self, track: TrackedObject, detection: Detection, frame_id: int | None) -> None:
+        track.previous_pixel_centroid = track.pixel_centroid
+        track.previous_table_pose = track.table_pose
+        track.previous_seen_frame_id = track.last_seen_frame_id
         track.age_frames += 1
         track.missed_frames = 0
         track.stable_frames += 1
@@ -84,6 +88,7 @@ class ObjectTracker:
         track.confidence = (track.confidence * 0.65) + (detection.confidence * 0.35)
         track.bbox_xywh = detection.bbox_xywh
         track.smoothed_bbox_xywh = smooth_bbox(track.smoothed_bbox_xywh, detection.bbox_xywh, self.smoothing)
+        track.pixel_centroid = bbox_centroid(track.smoothed_bbox_xywh)
         track.table_pose = detection.table_pose or track.table_pose
         track.target_bin = detection.target_bin or track.target_bin
         track.last_seen_frame_id = frame_id
@@ -125,3 +130,8 @@ def smooth_bbox(
     alpha: float,
 ) -> tuple[float, float, float, float]:
     return tuple((1.0 - alpha) * old + alpha * new for old, new in zip(previous, current))
+
+
+def bbox_centroid(bbox: tuple[float, float, float, float]) -> tuple[float, float]:
+    x, y, w, h = bbox
+    return x + w / 2.0, y + h / 2.0
