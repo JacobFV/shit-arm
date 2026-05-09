@@ -45,6 +45,7 @@ python -m shit_arm.cli run mirror --ticks 3
 python -m shit_arm.cli run vision-monitor --ticks 1
 python -m shit_arm.cli run sort --ticks 1
 python -m shit_arm.cli run record --ticks 5 --run-root runs
+python -m shit_arm.cli run vision-monitor --vision-detector color --ticks 30
 ```
 
 After installing the package, the `shit-arm` console command is also available:
@@ -150,6 +151,71 @@ Every mode returns a `RobotCommand`:
 - `composite`
 
 This means mirror, replay, assisted teleop, and sorting all share the same final safety and hardware path.
+
+## Vision Pipeline
+
+Vision is persistent rather than frame-local. Each camera frame is processed as:
+
+```text
+camera frame -> detector -> tracker -> table pose estimator -> bin classifier -> target selector
+```
+
+The detector returns one-frame `Detection` values. The tracker turns those into persistent `TrackedObject` values with:
+
+- `track_id`
+- smoothed bounding box
+- age and missed-frame counts
+- stable/selected/lost status
+- table pose
+- target bin
+- target-selection score
+
+Available detector backends:
+
+- `mock`: deterministic fake can for tests and mode development.
+- `color`: dependency-free red-object blob detector for controlled camera bringup.
+- `foreground`: dependency-free object proposal for non-table blobs on a plain table.
+- `yolo`: optional Ultralytics YOLO detector; install with `pip install ultralytics`.
+
+Examples:
+
+```bash
+python -m shit_arm.cli run vision-monitor --vision-detector mock --ticks 5
+python -m shit_arm.cli run vision-monitor --vision-detector color --ticks 100
+python -m shit_arm.cli run vision-monitor --vision-detector foreground --foreground-min-area 300 --ticks 100
+python -m shit_arm.cli run vision-monitor --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
+python -m shit_arm.cli run sort --target-label can --ticks 1
+```
+
+The sorting modes prefer selected tracks over raw detections, so closed-loop behavior can keep following the same physical object by `track_id`.
+
+Tracker and selector settings are exposed from the CLI:
+
+```bash
+python -m shit_arm.cli run vision-monitor \
+  --vision-detector foreground \
+  --tracker-stable-after-frames 3 \
+  --tracker-max-missed-frames 8 \
+  --selector-min-confidence 0.4
+```
+
+For calibrated table coordinates, pass a 3x3 image-to-table homography JSON file:
+
+```json
+{
+  "image_to_table_homography": [
+    [0.001, 0.0, -0.32],
+    [0.0, 0.001, 0.08],
+    [0.0, 0.0, 1.0]
+  ]
+}
+```
+
+Then run:
+
+```bash
+python -m shit_arm.cli run vision-monitor --homography-path calibration/image_to_table.json
+```
 
 ## Next Hardware Work
 

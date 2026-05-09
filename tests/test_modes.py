@@ -17,8 +17,10 @@ def test_mirror_emits_joint_command() -> None:
 
 
 def test_vision_monitor_holds() -> None:
-    result, _context = run_mode("vision-monitor")
+    result, context = run_mode("vision-monitor")
     assert result.last_command.kind == CommandKind.HOLD
+    assert context.perception_state.tracks
+    assert context.perception_state.selected_track_id == 1
 
 
 def test_sort_emits_composite_command() -> None:
