@@ -47,6 +47,9 @@ function renderState(payload) {
   els.mode.textContent = state.mode || '-';
   els.frame.textContent = `${state.camera?.frame_id ?? '-'} (${state.camera?.width ?? 0}x${state.camera?.height ?? 0})`;
   els.perception.textContent = state.perception?.status || '-';
+  if (payload.readError) {
+    els.perception.textContent = `${els.perception.textContent} (${payload.stale ? 'stale' : 'fallback'})`;
+  }
   els.selected.textContent = state.perception?.selected_track_id ?? '-';
   els.gripperPixel.textContent = fmtPoint(state.gripper?.pixel);
   els.gripperWorld.textContent = fmtPose(state.gripper?.world);

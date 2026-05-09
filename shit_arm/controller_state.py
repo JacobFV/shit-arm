@@ -53,10 +53,7 @@ def write_controller_state(context: SystemContext, path: Path, frame_image_path:
     if frame_image_path is None:
         frame_image_path = path.with_name("latest-frame.svg")
     frame_image_path = write_controller_frame(context, frame_image_path)
-    path.write_text(
-        json.dumps(build_controller_state(context, frame_image_path), indent=2, default=str) + "\n",
-        encoding="utf-8",
-    )
+    _atomic_write_text(path, json.dumps(build_controller_state(context, frame_image_path), indent=2, default=str) + "\n")
 
 
 def write_controller_frame(context: SystemContext, path: Path) -> Path:
@@ -156,7 +153,8 @@ def _write_with_cv2(payload: Any, path: Path) -> bool:
 def _write_placeholder_svg(path: Path, width: int, height: int, frame_id: int) -> None:
     width = width or 640
     height = height or 480
-    path.write_text(
+    _atomic_write_text(
+        path,
         f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
   <rect width="100%" height="100%" fill="#101820"/>
   <path d="M0 {height / 2}H{width}M{width / 2} 0V{height}" stroke="#263241" stroke-width="2"/>
@@ -164,5 +162,10 @@ def _write_placeholder_svg(path: Path, width: int, height: int, frame_id: int) -
   <text x="24" y="76" fill="#8b96a6" font-family="system-ui" font-size="16">no camera payload exported</text>
 </svg>
 """,
-        encoding="utf-8",
     )
+
+
+def _atomic_write_text(path: Path, contents: str) -> None:
+    tmp_path = path.with_name(f".{path.name}.tmp")
+    tmp_path.write_text(contents, encoding="utf-8")
+    tmp_path.replace(path)
