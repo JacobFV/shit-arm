@@ -64,7 +64,7 @@ def write_controller_frame(context: SystemContext, path: Path) -> Path:
     payload = frame.payload
     if payload is None:
         output_path = path.with_suffix(".svg")
-        _write_placeholder_svg(output_path, frame.width, frame.height, frame.frame_id)
+        _write_status_svg(output_path, frame.width, frame.height, frame.frame_id)
         return output_path
     output_path = path.with_suffix(".jpg")
     if _write_with_pillow(payload, output_path):
@@ -72,7 +72,7 @@ def write_controller_frame(context: SystemContext, path: Path) -> Path:
     if _write_with_cv2(payload, output_path):
         return output_path
     output_path = path.with_suffix(".svg")
-    _write_placeholder_svg(output_path, frame.width, frame.height, frame.frame_id)
+    _write_status_svg(output_path, frame.width, frame.height, frame.frame_id)
     return output_path
 
 
@@ -150,7 +150,7 @@ def _write_with_cv2(payload: Any, path: Path) -> bool:
         return False
 
 
-def _write_placeholder_svg(path: Path, width: int, height: int, frame_id: int) -> None:
+def _write_status_svg(path: Path, width: int, height: int, frame_id: int) -> None:
     width = width or 640
     height = height or 480
     _atomic_write_text(

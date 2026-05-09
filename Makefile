@@ -2,10 +2,10 @@ PYTHON ?= python
 NPM ?= npm
 
 MODE ?= vision-monitor
-BACKEND ?= mock
+BACKEND ?= sim
 TICKS ?= 999999
 HZ ?= 10
-VISION_DETECTOR ?= mock
+VISION_DETECTOR ?= static
 LEROBOT_VISION_DETECTOR ?= foreground
 CONTROLLER_STATE ?= controller/controller-state.json
 CONTROLLER_FRAME ?= controller/latest-frame.jpg
@@ -29,7 +29,7 @@ SELECTOR_MIN_CONFIDENCE ?= 0.35
 FOREGROUND_MIN_AREA ?= 250
 FOREGROUND_THRESHOLD ?= 55
 
-.PHONY: help install install-python install-node test test-python test-js modes controller controller-state vision vision-mock vision-lerobot mirror-lerobot diagnostics-lerobot clean
+.PHONY: help install install-python install-node test test-python test-js modes controller controller-state vision vision-sim vision-lerobot mirror-lerobot diagnostics-lerobot clean
 
 help:
 	@printf '%s\n' \
@@ -37,16 +37,16 @@ help:
 		'  make install              Install Python package and Node controller deps' \
 		'  make test                 Run Python tests and JS syntax checks' \
 		'  make controller           Start the Electron controller app' \
-		'  make controller-state     Write one mock controller-state JSON snapshot' \
-		'  make vision-mock          Run mock vision and keep controller state updated' \
+		'  make controller-state     Write one simulated controller-state JSON snapshot' \
+		'  make vision-sim           Run simulated vision and keep controller state updated' \
 		'  make vision-lerobot       Run LeRobot vision with OpenCV camera' \
 		'  make mirror-lerobot       Run LeRobot guide-arm mirror mode' \
 		'  make diagnostics-lerobot  Run LeRobot diagnostics once' \
 		'' \
 		'Common variables:' \
 		'  ROBOT_PORT=/dev/tty... TELEOP_PORT=/dev/tty...' \
-		'  VISION_DETECTOR=mock|color|foreground|yolo' \
-		'  LEROBOT_VISION_DETECTOR=foreground|color|yolo|mock' \
+		'  VISION_DETECTOR=static|color|foreground|yolo' \
+		'  LEROBOT_VISION_DETECTOR=foreground|color|yolo|static' \
 		'  TICKS=999999 HZ=10 OPENCV_CAMERA_INDEX=0'
 
 install: install-python install-node
@@ -76,15 +76,15 @@ controller:
 controller-state:
 	$(PYTHON) -m shit_arm.cli run vision-monitor \
 		--ticks 3 \
-		--vision-detector mock \
+		--vision-detector static \
 		--controller-state-path $(CONTROLLER_STATE) \
 		--controller-frame-path $(CONTROLLER_FRAME)
 
-vision: vision-mock
+vision: vision-sim
 
-vision-mock:
+vision-sim:
 	$(PYTHON) -m shit_arm.cli run $(MODE) \
-		--backend mock \
+		--backend sim \
 		--ticks $(TICKS) \
 		--hz $(HZ) \
 		--vision-detector $(VISION_DETECTOR) \

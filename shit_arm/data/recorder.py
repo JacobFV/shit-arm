@@ -11,16 +11,16 @@ from shit_arm.types import RobotCommand, SystemContext
 
 class NullRecorder:
     def start_run(self, run_name: str | None = None) -> None:
-        pass
+        return None
 
     def stop_run(self) -> None:
-        pass
+        return None
 
     def record_event(self, event_type: str, payload: dict[str, Any]) -> None:
-        pass
+        return None
 
     def record_tick(self, context: SystemContext, command: RobotCommand) -> None:
-        pass
+        return None
 
 
 @dataclass

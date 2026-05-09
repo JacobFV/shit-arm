@@ -2,7 +2,7 @@
 
 Control shell for a guide arm, powered robot arm, and laptop-camera trash-sorting system.
 
-The first implementation is intentionally hardware-light: every mode runs against mock adapters, emits normalized robot commands, passes through a safety filter, and can be recorded. Real guide-arm, robot-arm, and camera drivers can replace the mock classes without changing the modes.
+The default local backend is an explicit simulator for development and tests. Real hardware uses LeRobot follower/leader adapters, emits normalized robot commands, passes through a safety filter, and can be recorded.
 
 ## Modes
 
@@ -65,7 +65,7 @@ make install
 make test
 make controller-state
 make controller
-make vision-mock
+make vision-sim
 ```
 
 For LeRobot hardware, pass ports as variables:
@@ -199,7 +199,7 @@ The detector returns one-frame `Detection` values. The tracker turns those into 
 
 Available detector backends:
 
-- `mock`: deterministic fake can for tests and mode development.
+- `static`: deterministic can detection for tests and mode development.
 - `color`: dependency-free red-object blob detector for controlled camera bringup.
 - `foreground`: dependency-free object proposal for non-table blobs on a plain table.
 - `yolo`: optional Ultralytics YOLO detector; install with `pip install ultralytics`.
@@ -207,7 +207,7 @@ Available detector backends:
 Examples:
 
 ```bash
-python -m shit_arm.cli run vision-monitor --vision-detector mock --ticks 5
+python -m shit_arm.cli run vision-monitor --vision-detector static --ticks 5
 python -m shit_arm.cli run vision-monitor --vision-detector color --ticks 100
 python -m shit_arm.cli run vision-monitor --vision-detector foreground --foreground-min-area 300 --ticks 100
 python -m shit_arm.cli run vision-monitor --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
@@ -286,9 +286,9 @@ To point the app at another state file:
 SHIT_ARM_CONTROLLER_STATE=/tmp/shit-arm-controller.json npm start
 ```
 
-## Next Hardware Work
+## Hardware Interface
 
-Implement real adapters with the same methods as the mocks:
+Hardware adapters implement these methods:
 
 - `guide.read_state()`
 - `robot.read_state()`

@@ -11,7 +11,7 @@ from shit_arm.types import Calibration, CameraFrame, PerceptionState
 
 @dataclass
 class VisionPipeline:
-    detector: ObjectDetector = field(default_factory=lambda: build_detector("mock"))
+    detector: ObjectDetector = field(default_factory=lambda: build_detector("static"))
     tracker: ObjectTracker = field(default_factory=ObjectTracker)
     pose_estimator: TablePoseEstimator = field(default_factory=TablePoseEstimator)
     bin_classifier: TrashBinClassifier = field(default_factory=TrashBinClassifier)
@@ -46,7 +46,7 @@ class VisionPipeline:
 
 @dataclass
 class VisionConfig:
-    detector_name: str = "mock"
+    detector_name: str = "static"
     tracker_min_iou: float = 0.15
     tracker_max_center_distance: float = 120.0
     tracker_smoothing: float = 0.35
@@ -61,7 +61,7 @@ class VisionConfig:
     yolo_labels: set[str] | None = None
 
 
-def build_vision_pipeline(detector_name: str = "mock", config: VisionConfig | None = None) -> VisionPipeline:
+def build_vision_pipeline(detector_name: str = "static", config: VisionConfig | None = None) -> VisionPipeline:
     config = config or VisionConfig(detector_name=detector_name)
     config.detector_name = detector_name
     return VisionPipeline(
