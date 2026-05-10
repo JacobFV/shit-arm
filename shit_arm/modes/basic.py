@@ -48,24 +48,6 @@ class CalibrationMode(Mode):
         return RobotCommand.hold("calibration")
 
 
-class ManualJogMode(Mode):
-    name = "manual-jog"
-
-    def tick(self, context: SystemContext) -> RobotCommand:
-        jog = context.options.get("jog")
-        if not jog:
-            return RobotCommand.hold("manual jog waiting for command")
-        kind = jog.get("kind")
-        if kind == "joint":
-            joints = list(context.robot_state.joints or context.calibration.home_joints)
-            index = int(jog["index"])
-            joints[index] += float(jog.get("delta", 0.0))
-            return RobotCommand.joints(tuple(joints), speed_scale=float(jog.get("speed_scale", 0.25)), reason="manual jog")
-        if kind == "gripper":
-            return RobotCommand.gripper_to(float(jog.get("position", context.robot_state.gripper)), reason="manual jog")
-        return RobotCommand.hold(f"unsupported jog kind {kind!r}")
-
-
 class HomingMode(Mode):
     name = "homing"
 
@@ -85,17 +67,6 @@ class RecoveryMode(Mode):
         return RobotCommand.joints(context.calibration.home_joints, speed_scale=0.2, reason="recovery home")
 
 
-class DryRunMode(Mode):
-    name = "dry-run"
-
-    def tick(self, context: SystemContext) -> RobotCommand:
-        command = context.options.get("dry_run_command")
-        if isinstance(command, RobotCommand):
-            context.recorder.record_event("dry_run_command", {"kind": command.kind.value})
-            return command
-        return RobotCommand.hold("dry run")
-
-
 def pose_above(pose: Pose, dz: float = 0.08) -> Pose:
     return Pose(pose.x, pose.y, pose.z + dz, pose.roll, pose.pitch, pose.yaw)
 
@@ -109,4 +80,3 @@ def drop_sequence(bin_pose: Pose) -> RobotCommand:
         ),
         reason="drop sequence",
     )
-

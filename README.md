@@ -10,21 +10,12 @@ The runtime backend is LeRobot hardware. The app reads real follower/leader stat
 # Install Python + Node deps
 make install
 
-# Start the WebSocket server
-make ws-server
-
-# Open the React UI (separate terminal)
-make ui
-
-# Open the Electron view (separate terminal)
-make controller
+# Start the real robot WebSocket server and React UI
+make app ROBOT_PORT=/dev/cu.usbmodem5B140339331
 ```
 
-Open http://localhost:5173 in a browser for the ARM control panel
-(JointRow, CartesianPad, video frame, gripper, object tracks).
-
-The Electron window shows the webcam feed with workspace overlay (grid,
-gripper cross, track bounding boxes) and a 3D arm view.
+Open http://localhost:5173 in a browser for the ARM control panel,
+live camera overlay, object tracks, and SO-101 robot view.
 
 ## WebSocket Server
 
@@ -36,22 +27,19 @@ ws://127.0.0.1:8765/ws
 
 - Broadcasts arm state + camera frames (data URI) at ~10Hz
 - Accepts control commands (jog, gripper, torque, home, stop)
-- Supports the `lerobot` hardware backend
 - Health check: `GET http://127.0.0.1:8765/health`
 
 ```bash
-make ws-server WS_BACKEND=lerobot ROBOT_PORT=/dev/tty...
+make ws-server ROBOT_PORT=/dev/tty...
 ```
 
 ## Frontends
 
 | App | Stack | What it shows |
 |-----|-------|---------------|
-| React UI (`shit_arm/control/UI/`) | Vite + React 19 + TS 6 | Joint controls, cartesian jog pad, video frame, tool position, gripper, object tracks, speed settings, current chart |
-| Electron (`controller/`) | Electron 42 | Webcam feed with tracking overlay, 3D arm view, proprioception panel |
+| React UI (`shit_arm/control/UI/`) | Vite + React 19 + TS 6 | Joint controls, Cartesian jog pad, live camera tracking boxes, SO-101 robot view, tool position, gripper, object tracks, speed settings, current chart |
 
-Both connect to the WebSocket server. The React UI sends control commands;
-the Electron view is read-only for the overlay.
+The React UI connects to the WebSocket server and sends control commands.
 
 ## Modes
 
@@ -61,10 +49,8 @@ Bringup and safety:
 - `emergency-stop`
 - `diagnostics`
 - `calibration`
-- `manual-jog`
 - `homing`
 - `recovery`
-- `dry-run`
 
 Human control and data:
 
@@ -90,9 +76,9 @@ Vision and sorting:
 
 ```bash
 python -m shit_arm.cli modes
-python -m shit_arm.cli run mirror --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 3
-python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 1
-python -m shit_arm.cli run sort --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 1
+python -m shit_arm.cli run mirror --robot-port /dev/tty... --teleop-port /dev/tty... --ticks 3
+python -m shit_arm.cli run vision-monitor --robot-port /dev/tty... --ticks 1
+python -m shit_arm.cli run sort --robot-port /dev/tty... --ticks 1
 ```
 
 After installing, the `shit-arm` console command is also available:
@@ -131,10 +117,10 @@ make install            # Install Python + Node deps
 make install-ws         # Install Python deps for the WebSocket server
 make install-bridge     # Install Python deps for bridge helpers
 make test               # Run Python tests + JS syntax checks
+make app                # Start real robot WebSocket server + React UI
 make ui                 # Start React UI dev server
 make build-ui           # Build React UI
 make bridge             # Show low-level servo bridge commands
-make controller         # Start Electron controller app
 make ws-server          # Start WebSocket server
 make vision-lerobot     # Run LeRobot vision with OpenCV camera
 ```
@@ -177,7 +163,6 @@ Then run this project against those same IDs and ports:
 
 ```bash
 python -m shit_arm.cli run mirror \
-  --backend lerobot \
   --robot-type so101_follower \
   --robot-port /dev/tty.usbmodem585A0076841 \
   --robot-id shit_arm_follower \
@@ -192,7 +177,6 @@ To route a laptop camera through LeRobot's follower observation, add an OpenCV c
 
 ```bash
 python -m shit_arm.cli run vision-monitor \
-  --backend lerobot \
   --robot-type so101_follower \
   --robot-port /dev/tty.usbmodem585A0076841 \
   --robot-id shit_arm_follower \
@@ -225,13 +209,11 @@ input adapters -> context refresh -> mode -> safety filter -> robot driver
                                   |
                                   v
                          WebSocket server (wss.py)
-                              |           |
-                     ┌────────┘           └────────┐
-                     ▼                              ▼
-               React UI (Vite)              Electron controller
-              (control panel,              (webcam + overlay,
-               video frame,                3D sim, proprioception)
-               jog controls)
+                                  |
+                                  v
+                           React UI (Vite)
+                    (control panel, camera overlay,
+                     object tracks, SO-101 robot view)
 ```
 
 Every mode returns a `RobotCommand`:
@@ -274,10 +256,10 @@ Available detector backends:
 Examples:
 
 ```bash
-python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --vision-detector color --ticks 100
-python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --vision-detector foreground --foreground-min-area 300 --ticks 100
-python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
-python -m shit_arm.cli run sort --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --target-label can --ticks 1
+python -m shit_arm.cli run vision-monitor --robot-port /dev/tty... --vision-detector color --ticks 100
+python -m shit_arm.cli run vision-monitor --robot-port /dev/tty... --vision-detector foreground --foreground-min-area 300 --ticks 100
+python -m shit_arm.cli run vision-monitor --robot-port /dev/tty... --vision-detector yolo --yolo-model yolov8n.pt --yolo-label bottle --ticks 100
+python -m shit_arm.cli run sort --robot-port /dev/tty... --target-label can --ticks 1
 ```
 
 The sorting modes prefer selected tracks over raw detections, so closed-loop behavior can keep following the same physical object by `track_id`.
@@ -294,9 +276,7 @@ Tracker and selector settings are exposed from the CLI:
 
 ```bash
 python -m shit_arm.cli run vision-monitor \
-  --backend lerobot \
   --robot-port /dev/tty... \
-  --teleop-port /dev/tty... \
   --vision-detector foreground \
   --tracker-stable-after-frames 3 \
   --tracker-max-missed-frames 8 \
@@ -318,8 +298,33 @@ For calibrated table coordinates, pass a 3x3 image-to-table homography JSON file
 Then run:
 
 ```bash
-python -m shit_arm.cli run vision-monitor --backend lerobot --robot-port /dev/tty... --teleop-port /dev/tty... --homography-path calibration/image_to_table.json
+python -m shit_arm.cli run vision-monitor --robot-port /dev/tty... --homography-path calibration/image_to_table.json
 ```
+
+To generate that file from arm motion, attach a visible marker to the tool tip,
+keep the camera fixed, and run projection calibration over the reachable table
+plane:
+
+```bash
+python -m shit_arm.cli calibrate-projection \
+  --robot-type so101_follower \
+  --robot-port /dev/tty.usbmodem585A0076841 \
+  --robot-id shit_arm_follower \
+  --camera-key front \
+  --opencv-camera-index 0 \
+  --out calibration/image_to_table.json \
+  --x-min -0.20 --x-max 0.20 \
+  --y-min 0.18 --y-max 0.50 \
+  --z 0.04 \
+  --grid-x 3 --grid-y 3 \
+  --marker-color red
+```
+
+The command moves the arm to each grid point, localizes the marker in the
+camera frame, solves the image-to-table homography, writes reprojection error
+metrics, and updates the same calibration JSON consumed by the runtime. After
+calibration, `vision-pick`, `vision-closed-loop`, and `sort` project bounding
+box centers into table/world coordinates before issuing Cartesian arm targets.
 
 ## Robot Hardware
 
@@ -345,7 +350,7 @@ lerobot-calibrate \
 ### 3. Start the WS server with the hardware backend
 
 ```bash
-make ws-server WS_BACKEND=lerobot \
+make ws-server \
   ROBOT_PORT=/dev/tty.usbmodemXXXXX \
   ROBOT_TYPE=so101_follower \
   OPENCV_CAMERA_INDEX=0
@@ -355,7 +360,6 @@ Or directly:
 
 ```bash
 uv run python -m shit_arm.control.wss \
-  --backend lerobot \
   --robot-port /dev/tty.usbmodemXXXXX \
   --robot-type so101_follower \
   --camera-index 0 \
@@ -368,8 +372,7 @@ uv run python -m shit_arm.control.wss \
 LeRobotFollowerArm.read_state()
   → ArmState(joints=[6 floats], pose=Pose(x,y,z,roll,pitch,yaw), gripper=float)
   → WebSocket JSON broadcast (~20Hz)
-  → React UI displays joint rows, tool position, gripper
-  → Electron renders canvas overlay + 3D arm view
+  → React UI displays joint rows, camera tracking boxes, tool position, gripper, SO-101 robot view
 
 Commands from React:
   jog_joint(0, +0.05) → LeRobotFollowerArm.apply(RobotCommand.joints(...))
@@ -388,12 +391,10 @@ Generate a controller state file from Python (legacy, for tools that don't use W
 
 ```bash
 python -m shit_arm.cli run vision-monitor \
-  --backend lerobot \
   --robot-port /dev/tty... \
-  --teleop-port /dev/tty... \
   --ticks 5 \
-  --controller-state-path controller/controller-state.json \
-  --controller-frame-path controller/latest-frame.jpg
+  --controller-state-path runs/controller-state.json \
+  --controller-frame-path runs/latest-frame.jpg
 ```
 
 ## Hardware Interface
@@ -409,7 +410,7 @@ Hardware adapters implement these methods:
 Recommended next order:
 
 1. Set up motors and calibration with the official LeRobot tools.
-2. Bring up `diagnostics`, `manual-jog`, and `homing` on real hardware.
+2. Bring up `diagnostics`, WebSocket jog commands, and `homing` on real hardware.
 3. Make `mirror` stable with speed limits and a deadman switch.
 4. Use `record` and `teach` to collect synchronized trajectories.
 5. Validate repeatability with `replay`.

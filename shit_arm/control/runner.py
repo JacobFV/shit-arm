@@ -52,7 +52,8 @@ class ModeRunner:
 
     def _refresh_inputs(self) -> None:
         self.context.robot_state = self.context.robot.read_state()
-        self.context.guide_state = self.context.guide.read_state()
+        if self.context.guide is not None:
+            self.context.guide_state = self.context.guide.read_state()
         self.context.camera_frame = self.context.camera.read()
         self.context.perception_state = self.context.perception.update(
             self.context.camera_frame,

@@ -2,17 +2,15 @@
   "name": "shit-arm",
   "version": "0.1.0",
   "private": true,
-  "description": "Robot arm control stack with Electron and React controller apps.",
+  "description": "Robot arm control stack with a React hardware control UI.",
   "scripts": {
-    "controller": "npm run start --workspace controller",
     "ui": "npm run dev --workspace shit_arm/control/UI",
     "build:ui": "npm run build --workspace shit_arm/control/UI",
     "lint:ui": "npm run lint --workspace shit_arm/control/UI",
-    "start": "npm run start --workspace controller",
-    "test": "node --check controller/main.js && node --check controller/preload.js && node --check controller/renderer.js"
+    "start": "npm run ui",
+    "test": "npm run build:ui"
   },
   "workspaces": [
-    "controller",
     "shit_arm/control/UI"
   ]
 }

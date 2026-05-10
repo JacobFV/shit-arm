@@ -11,7 +11,6 @@ ModeName = Literal[
     "emergency-stop",
     "diagnostics",
     "calibration",
-    "manual-jog",
     "homing",
     "mirror",
     "record",
@@ -24,7 +23,6 @@ ModeName = Literal[
     "human-confirm-sort",
     "sort",
     "dataset",
-    "dry-run",
     "recovery",
 ]
 

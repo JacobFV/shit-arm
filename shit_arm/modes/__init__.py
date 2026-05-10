@@ -4,10 +4,8 @@ from shit_arm.modes.base import HoldMode, Mode
 from shit_arm.modes.basic import (
     CalibrationMode,
     DiagnosticsMode,
-    DryRunMode,
     EmergencyStopMode,
     HomingMode,
-    ManualJogMode,
     RecoveryMode,
 )
 from shit_arm.modes.human import AssistedTeleopMode, MirrorMode, RecordMode, TeachMode
@@ -28,7 +26,6 @@ MODE_CLASSES: dict[str, type[Mode]] = {
         EmergencyStopMode,
         DiagnosticsMode,
         CalibrationMode,
-        ManualJogMode,
         HomingMode,
         MirrorMode,
         RecordMode,
@@ -41,7 +38,6 @@ MODE_CLASSES: dict[str, type[Mode]] = {
         HumanConfirmSortMode,
         SortMode,
         DatasetMode,
-        DryRunMode,
         RecoveryMode,
     )
 }
@@ -51,11 +47,9 @@ MODE_DESCRIPTIONS: dict[str, str] = {
     "calibration": "Record a calibration snapshot without moving hardware.",
     "dataset": "Capture perception metadata for dataset labeling.",
     "diagnostics": "Record current robot, guide, camera, perception, and safety status.",
-    "dry-run": "Execute an injected in-process command for tests and development harnesses.",
     "emergency-stop": "Latch safety stop and emit a stop command.",
     "homing": "Move to configured home joints at low speed.",
     "human-confirm-sort": "Propose a sort target and wait for explicit confirmation.",
-    "manual-jog": "Apply a single injected joint or gripper jog command.",
     "mirror": "Mirror guide-arm joint or cartesian state to the robot arm.",
     "record": "Mirror guide-arm input while recording ticks to a run log.",
     "recovery": "Run a configured recovery action, defaulting to low-speed home.",

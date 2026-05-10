@@ -54,6 +54,53 @@ export interface PerceptionState {
   tracks: TrackedObject[]
 }
 
+export interface RobotVisual {
+  origin: {
+    xyz: number[]
+    rpy: number[]
+  }
+  geometry: {
+    type: string
+    filename?: string
+    scale?: number[]
+    size?: number[]
+    radius?: number
+    length?: number
+  } | null
+  color: number[] | null
+}
+
+export interface RobotLink {
+  name: string
+  visuals: RobotVisual[]
+}
+
+export interface RobotJoint {
+  name: string
+  type: string
+  parent: string | null
+  child: string | null
+  origin: {
+    xyz: number[]
+    rpy: number[]
+  }
+  axis: number[]
+  limit: {
+    lower: number | null
+    upper: number | null
+    effort: number | null
+    velocity: number | null
+  } | null
+}
+
+export interface RobotModel {
+  name: string
+  format: string
+  asset_base_url: string
+  links: RobotLink[]
+  joints: RobotJoint[]
+}
+
 export interface SafetyState {
   ok: boolean
   estop: boolean
@@ -73,6 +120,7 @@ export interface ArmState {
   camera: CameraInfo
   perception: PerceptionState
   safety: SafetyState
+  robot_model: RobotModel
 }
 
 export type Command =

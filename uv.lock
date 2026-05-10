@@ -545,6 +545,15 @@ wheels = [
 ]
 
 [[package]]
+name = "feetech-servo-sdk"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyserial" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5f/8e/c53d6f9a8bf3a86a635b58eeb675723f1b040f1665a0681467756c8989aa/feetech-servo-sdk-1.0.0.tar.gz", hash = "sha256:d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c", size = 8392, upload-time = "2022-11-08T03:44:45.269Z" }
+
+[[package]]
 name = "filelock"
 version = "3.29.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2666,8 +2675,12 @@ name = "shit-arm"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "fastapi" },
+    { name = "feetech-servo-sdk" },
     { name = "lerobot", version = "0.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "lerobot", version = "0.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "numpy" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.optional-dependencies]
@@ -2688,14 +2701,18 @@ ws = [
 
 [package.metadata]
 requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
     { name = "fastapi", marker = "extra == 'ws'", specifier = ">=0.115" },
+    { name = "feetech-servo-sdk", specifier = ">=1.0.0" },
     { name = "lerobot" },
+    { name = "numpy", specifier = ">=2" },
     { name = "numpy", marker = "extra == 'bridge'", specifier = ">=2" },
     { name = "numpy", marker = "extra == 'ws'", specifier = ">=2" },
     { name = "opencv-contrib-python", marker = "extra == 'bridge'", specifier = ">=4.10" },
     { name = "pillow", marker = "extra == 'bridge'", specifier = ">=10" },
     { name = "pyserial", marker = "extra == 'bridge'", specifier = ">=3.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'ws'", specifier = ">=0.34" },
 ]
 provides-extras = ["dev", "ws", "bridge"]

@@ -6,26 +6,53 @@ from typing import Any
 from xml.etree import ElementTree
 
 
-URDF_PATH = Path(__file__).parent / "assets" / "urdf" / "shit_arm_so101_like.urdf"
+URDF_PATH = Path(__file__).parent / "assets" / "urdf" / "so101_new_calib.urdf"
+JOINT_ORDER = {
+    "shoulder_pan": 0,
+    "shoulder_lift": 1,
+    "elbow_flex": 2,
+    "wrist_flex": 3,
+    "wrist_roll": 4,
+    "gripper": 5,
+}
 
 
 @lru_cache(maxsize=1)
 def load_robot_model() -> dict[str, Any]:
     root = ElementTree.parse(URDF_PATH).getroot()
+    materials = _materials_payload(root)
     return {
         "name": root.attrib.get("name", "robot"),
         "format": "urdf",
         "urdf_path": str(URDF_PATH),
-        "links": [_link_payload(link) for link in root.findall("link")],
-        "joints": [_joint_payload(joint) for joint in root.findall("joint")],
+        "asset_root": str(URDF_PATH.parent),
+        "links": [_link_payload(link, materials) for link in root.findall("link")],
+        "joints": sorted(
+            [_joint_payload(joint) for joint in root.findall("joint")],
+            key=lambda joint: (JOINT_ORDER.get(joint["name"], len(JOINT_ORDER)), joint["name"]),
+        ),
     }
 
 
-def _link_payload(link: ElementTree.Element) -> dict[str, Any]:
-    visual = link.find("visual")
+def _materials_payload(root: ElementTree.Element) -> dict[str, tuple[float, float, float, float]]:
+    materials: dict[str, tuple[float, float, float, float]] = {}
+    for material in root.findall("material"):
+        name = material.attrib.get("name")
+        color = _material_color(material)
+        if name and color:
+            materials[name] = color
+    return materials
+
+
+def _link_payload(
+    link: ElementTree.Element,
+    materials: dict[str, tuple[float, float, float, float]],
+) -> dict[str, Any]:
+    visuals = [_visual_payload(visual, materials) for visual in link.findall("visual")]
     return {
         "name": link.attrib["name"],
-        "visual": _visual_payload(visual) if visual is not None else None,
+        "visual": visuals[0] if visuals else None,
+        "visuals": visuals,
     }
 
 
@@ -56,7 +83,10 @@ def _joint_payload(joint: ElementTree.Element) -> dict[str, Any]:
     }
 
 
-def _visual_payload(visual: ElementTree.Element) -> dict[str, Any]:
+def _visual_payload(
+    visual: ElementTree.Element,
+    materials: dict[str, tuple[float, float, float, float]],
+) -> dict[str, Any]:
     origin = visual.find("origin")
     geometry = visual.find("geometry")
     material = visual.find("material")
@@ -66,7 +96,7 @@ def _visual_payload(visual: ElementTree.Element) -> dict[str, Any]:
             "rpy": _float_tuple(origin.attrib.get("rpy", "0 0 0")) if origin is not None else (0.0, 0.0, 0.0),
         },
         "geometry": _geometry_payload(geometry) if geometry is not None else None,
-        "color": _material_color(material),
+        "color": _visual_color(material, materials),
     }
 
 
@@ -74,6 +104,7 @@ def _geometry_payload(geometry: ElementTree.Element) -> dict[str, Any] | None:
     box = geometry.find("box")
     cylinder = geometry.find("cylinder")
     sphere = geometry.find("sphere")
+    mesh = geometry.find("mesh")
     if box is not None:
         return {"type": "box", "size": _float_tuple(box.attrib["size"])}
     if cylinder is not None:
@@ -84,7 +115,25 @@ def _geometry_payload(geometry: ElementTree.Element) -> dict[str, Any] | None:
         }
     if sphere is not None:
         return {"type": "sphere", "radius": float(sphere.attrib["radius"])}
+    if mesh is not None:
+        payload: dict[str, Any] = {"type": "mesh", "filename": mesh.attrib["filename"]}
+        if "scale" in mesh.attrib:
+            payload["scale"] = _float_tuple(mesh.attrib["scale"])
+        return payload
     return None
+
+
+def _visual_color(
+    material: ElementTree.Element | None,
+    materials: dict[str, tuple[float, float, float, float]],
+) -> tuple[float, float, float, float] | None:
+    color = _material_color(material)
+    if color:
+        return color
+    if material is None:
+        return None
+    name = material.attrib.get("name")
+    return materials.get(name) if name else None
 
 
 def _material_color(material: ElementTree.Element | None) -> tuple[float, float, float, float] | None:

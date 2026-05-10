@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from shit_arm.data import JsonlRecorder, NullRecorder
 from shit_arm.hardware.lerobot_adapter import LeRobotFollowerArm, LeRobotLeaderArm, LeRobotObservationCamera
 from shit_arm.perception import VisionConfig, build_vision_pipeline
+from shit_arm.perception.calibration import load_projection_homography
 from shit_arm.types import Calibration, SystemContext
 
 
@@ -14,7 +14,7 @@ def build_lerobot_context(
     robot_port: str,
     robot_id: str,
     teleop_type: str,
-    teleop_port: str,
+    teleop_port: str | None,
     teleop_id: str,
     camera_key: str = "front",
     cameras: dict[str, object] | None = None,
@@ -25,7 +25,7 @@ def build_lerobot_context(
     run_root: Path = Path("runs"),
 ) -> SystemContext:
     follower = LeRobotFollowerArm(robot_type=robot_type, port=robot_port, robot_id=robot_id, cameras=cameras)
-    leader = LeRobotLeaderArm(teleop_type=teleop_type, port=teleop_port, teleop_id=teleop_id)
+    leader = LeRobotLeaderArm(teleop_type=teleop_type, port=teleop_port, teleop_id=teleop_id) if teleop_port else None
     calibration = _lerobot_calibration()
     _load_homography(calibration, homography_path)
     return SystemContext(
@@ -76,6 +76,4 @@ def build_lerobot_opencv_cameras(
 def _load_homography(calibration: Calibration, path: Path | None) -> None:
     if path is None:
         return
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    matrix = payload.get("image_to_table_homography", payload)
-    calibration.image_to_table_homography = tuple(tuple(float(value) for value in row) for row in matrix)  # type: ignore[assignment]
+    calibration.image_to_table_homography = load_projection_homography(path)

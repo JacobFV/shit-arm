@@ -8,7 +8,13 @@ version = "0.1.0"
 description = "Control shell for guide-arm, robot-arm, and laptop-camera trash sorting experiments."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["lerobot"]
+dependencies = [
+    "fastapi>=0.115",
+    "feetech-servo-sdk>=1.0.0",
+    "lerobot",
+    "numpy>=2",
+    "uvicorn[standard]>=0.34",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
@@ -23,7 +29,7 @@ shit-arm-bridge = "shit_arm.data.bridge_tool:main"
 include = ["shit_arm*"]
 
 [tool.setuptools.package-data]
-shit_arm = ["assets/urdf/*.urdf"]
+shit_arm = ["assets/urdf/*.urdf", "assets/urdf/assets/*.stl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

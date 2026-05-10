@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { JointRow } from './components/JointRow'
 import { CartesianPad } from './components/CartesianPad'
 import { JointCurrentChart } from './components/JointCurrentChart'
+import { RobotView } from './components/RobotView'
 import { useArmWebSocket } from './ws/useArmWebSocket'
 import type { TrackedObject } from './ws/types'
 import './App.css'
@@ -10,6 +11,8 @@ const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8765/ws'
 
 const TABS = ['Move', 'Log', 'Teach', 'Setup'] as const
 type Tab = (typeof TABS)[number]
+const CENTER_VIEWS = ['Camera', 'URDF'] as const
+type CenterView = (typeof CENTER_VIEWS)[number]
 
 const SPEED_PRESETS = ['Slow', 'Default', 'Fast'] as const
 type SpeedPreset = (typeof SPEED_PRESETS)[number]
@@ -63,8 +66,14 @@ function App() {
   const [acceleration, setAcceleration] = useState(45)
   const [speed, setSpeed] = useState(25)
   const [enabled, setEnabled] = useState(false)
+  const [centerView, setCenterView] = useState<CenterView>('Camera')
 
   const { state, connected, sendCommand } = useArmWebSocket(WS_URL)
+  const robot = state?.robot
+  const pose = state?.pose
+  const safety = state?.safety
+  const tracks = state?.perception?.tracks || []
+  const displayJoints = robot?.joints ?? []
 
   const handleJogJoint = useCallback(
     (joint: number, delta: number) => {
@@ -94,11 +103,6 @@ function App() {
     },
     [sendCommand],
   )
-
-  const robot = state?.robot
-  const pose = state?.pose
-  const safety = state?.safety
-  const tracks = state?.perception?.tracks || []
 
   return (
     <div className="app">
@@ -187,8 +191,8 @@ function App() {
             name={name}
             speed={0.4006}
             acceleration={2.2778}
-            radians={robot?.joints?.[i] ?? 0}
-            degree={robot?.joints?.[i] !== undefined ? robot.joints[i] * (180 / Math.PI) : 0}
+            radians={displayJoints[i] ?? 0}
+            degree={displayJoints[i] !== undefined ? displayJoints[i] * (180 / Math.PI) : 0}
             encoder={0}
             current={0.0}
             temperature={0}
@@ -200,15 +204,66 @@ function App() {
       </section>
 
       <section className="center-pad">
-        <div className="video-frame">
-          {state?.frameImageUrl ? (
-            <img src={state.frameImageUrl} alt="Camera frame" className="video-frame__img" />
+        <div className="center-view-tabs" role="tablist" aria-label="Middle view">
+          {CENTER_VIEWS.map((view) => (
+            <button
+              key={view}
+              type="button"
+              role="tab"
+              aria-selected={centerView === view}
+              className={`center-view-tab ${centerView === view ? 'center-view-tab--active' : ''}`}
+              onClick={() => setCenterView(view)}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
+
+        <div className="center-view">
+          {centerView === 'Camera' ? (
+            <div className="video-frame">
+              {state?.frameImageUrl ? (
+                <>
+                  <img src={state.frameImageUrl} alt="Camera frame" className="video-frame__img" />
+                  <div className="video-frame__overlay">
+                    {tracks.map((t) => {
+                      const [x, y, w, h] = t.bbox_xywh || []
+                      if (!state.camera?.width || !state.camera?.height || w === undefined || h === undefined) return null
+                      return (
+                        <div
+                          key={t.track_id}
+                          className={`video-frame__box ${t.track_id === state.perception.selected_track_id ? 'video-frame__box--selected' : ''}`}
+                          style={{
+                            left: `${(x / state.camera.width) * 100}%`,
+                            top: `${(y / state.camera.height) * 100}%`,
+                            width: `${(w / state.camera.width) * 100}%`,
+                            height: `${(h / state.camera.height) * 100}%`,
+                          }}
+                        >
+                          <span>#{t.track_id} {t.label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="video-frame__status">
+                    vision {state.perception?.status || 'unknown'} · tracks {tracks.length}
+                  </div>
+                </>
+              ) : (
+                <div className="video-frame__placeholder">no camera frame</div>
+              )}
+            </div>
           ) : (
-            <div className="video-frame__placeholder">no camera frame</div>
+            <RobotView
+              model={state?.robot_model}
+              joints={displayJoints}
+              gripper={robot?.gripper || 0}
+            />
           )}
         </div>
+
         <CartesianPad onJog={(axis) => {
-          const d = axis.endsWith('+') ? 0.01 : -0.01
+          const d = axis.endsWith('+') ? -0.01 : 0.01
           const a = axis[0].toLowerCase() as 'x' | 'y' | 'z'
           handleJogCartesian(a, d)
         }} />
@@ -245,11 +300,7 @@ function App() {
           onClick={() => handleTorque(!enabled)}
           aria-pressed={enabled}
         >
-          <span className="enable-btn__text">
-            {'Enable'.split('').map((c, i) => (
-              <span key={i}>{c}</span>
-            ))}
-          </span>
+          Enable
         </button>
 
         <button type="button" className="ghost-btn">

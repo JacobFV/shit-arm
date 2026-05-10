@@ -19,7 +19,7 @@ def run_mode(name: str, ticks: int = 1):
 
 
 @dataclass
-class FakeGuideArm:
+class GuideArmDouble:
     joints: tuple[float, ...] = (0.0, -0.6, 1.0, 0.0, 0.6, 0.0)
     gripper: float = 1.0
 
@@ -28,7 +28,7 @@ class FakeGuideArm:
 
 
 @dataclass
-class FakeRobotArm:
+class RobotArmDouble:
     joints: tuple[float, ...] = (0.0, -0.8, 1.2, 0.0, 0.8, 0.0)
     gripper: float = 1.0
     applied: list[RobotCommand] = field(default_factory=list)
@@ -45,7 +45,7 @@ class FakeRobotArm:
 
 
 @dataclass
-class FakeCamera:
+class CameraDouble:
     frame_id: int = 0
 
     def read(self) -> CameraFrame:
@@ -60,9 +60,9 @@ class FakeCamera:
 def build_test_context() -> SystemContext:
     return SystemContext(
         mode_name="safe-idle",
-        robot=FakeRobotArm(),
-        guide=FakeGuideArm(),
-        camera=FakeCamera(),
+        robot=RobotArmDouble(),
+        guide=GuideArmDouble(),
+        camera=CameraDouble(),
         recorder=NullRecorder(),
         perception=VisionPipeline(detector=ForegroundDetector(min_area=50)),
         calibration=Calibration(),
@@ -132,7 +132,7 @@ def test_lerobot_calibration_uses_degree_limits() -> None:
     assert calibration.joint_limits[-1] == (0.0, 100.0)
 
 
-class FakeLeRobot:
+class LeRobotDouble:
     is_connected = True
     action_features = {"cartesian.x": float, "cartesian.y": float, "cartesian.z": float, "gripper.pos": float}
 
@@ -145,7 +145,7 @@ class FakeLeRobot:
 
 def test_lerobot_adapter_sends_cartesian_action_when_features_exist() -> None:
     follower = LeRobotFollowerArm.__new__(LeRobotFollowerArm)
-    follower.robot = FakeLeRobot()
+    follower.robot = LeRobotDouble()
     follower.last_observation = {}
     follower._last_action = {}
 
